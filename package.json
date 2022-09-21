@@ -1,0 +1,11 @@
+{
+  "name": "multiplayer-td",
+  "version": "0.0.1",
+  "module": "src/index.js",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "dependencies": {
+    "phaser": "^3.55.2"
+  }
+}

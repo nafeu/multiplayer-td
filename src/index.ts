@@ -5,6 +5,8 @@ const TANK_IMG_NAME = "36.png";
 // 5, 11, 17
 const ENEMY_IMG_NAME = "05.png";
 
+const TILE_SIZE = 32; // matches sprite size
+
 const entities = {
   player: {
     1: null,
@@ -16,6 +18,23 @@ const map = {
   path: null,
   graphics: null,
 };
+
+function setupPlayerSprite(sprite) {
+  sprite.on("pointerdown", function (pointer) {
+    this._isDown = true;
+    this._isSelected = !this._isSelected;
+    this.setTint(0xff0000);
+  });
+
+  sprite.on("pointerout", function (pointer) {
+    this._isDown && this.clearTint();
+  });
+
+  sprite.on("pointerup", function (pointer) {
+    this._isDown = false;
+    this._isSelected || this.clearTint();
+  });
+}
 
 class Scene extends Phaser.Scene {
   constructor() {
@@ -38,9 +57,26 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
+    this.input.on("pointerdown", function (pointer) {
+      if (entities.player[1]._isDown) {
+      } else if (entities.player[1]._isSelected) {
+        entities.player[1].x = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE;
+        entities.player[1].y = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE;
+        entities.player[1]._isSelected = false;
+        entities.player[1].clearTint();
+      } else {
+        // only deselect if not clicked on
+        entities.player[1].clearTint();
+      }
+    });
+
     entities.player[1] = this.add
       .image(32, 32, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setInteractive();
+
+    setupPlayerSprite(entities.player[1]);
+
     entities.enemies.push(
       this.add.image(0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME).setOrigin(0, 0)
     );

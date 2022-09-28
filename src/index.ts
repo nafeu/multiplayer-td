@@ -12,6 +12,7 @@ const entities = {
     1: null,
   },
   enemies: [],
+  enemyGroup: null,
 };
 
 const map = {
@@ -19,7 +20,7 @@ const map = {
   graphics: null,
 };
 
-function setupPlayerSprite(sprite) {
+function setupPlayerSprite(sprite: Phaser.GameObjects.Image) {
   sprite.on("pointerdown", function (pointer) {
     this._isDown = true;
     this._isSelected = !this._isSelected;
@@ -37,6 +38,7 @@ function setupPlayerSprite(sprite) {
 }
 
 class Scene extends Phaser.Scene {
+  nextEnemy: Number;
   constructor() {
     super("main");
   }
@@ -77,9 +79,9 @@ class Scene extends Phaser.Scene {
 
     setupPlayerSprite(entities.player[1]);
 
-    entities.enemies.push(
-      this.add.image(0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME).setOrigin(0, 0)
-    );
+    // entities.enemies.push(
+    //   this.add.image(0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME).setOrigin(0, 0)
+    // );
 
     // this graphics element is only for visualization,
     // its not related to our path
@@ -95,9 +97,29 @@ class Scene extends Phaser.Scene {
     map.graphics.lineStyle(3, 0xffffff, 1);
     // visualize the path
     map.path.draw(map.graphics);
+
+    entities.enemyGroup = this.add.group({
+      classType: Enemy,
+      runChildUpdate: true,
+    });
+    this.nextEnemy = 0;
   }
 
-  update() {}
+  update(time, delta) {
+    // if its time for the next enemy
+    if (time > this.nextEnemy) {
+      var enemy = entities.enemyGroup.get();
+      if (enemy) {
+        enemy.setActive(true);
+        enemy.setVisible(true);
+
+        // place the enemy at the start of the path
+        enemy.startOnPath();
+
+        this.nextEnemy = time + 2000;
+      }
+    }
+  }
 }
 
 var config: Phaser.Types.Core.GameConfig = {
@@ -109,12 +131,37 @@ var config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
+const ENEMY_SPEED = 1 / 10000;
 
-// var Enemy = new Phaser.Class({
-//   Extends: Phaser.GameObjects.Image,
-//   initialize: function Enemy(scene) {
-//     Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", "enemy");
-//   },
-//   this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
-//   update: function (time, delta) {},
-// });
+const Enemy = new Phaser.Class({
+  Extends: Phaser.GameObjects.Image,
+  initialize: function Enemy(scene) {
+    Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", ENEMY_IMG_NAME);
+    this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
+  },
+  startOnPath: function () {
+    // set the t parameter at the start of the path
+    this.follower.t = 0;
+
+    // get x and y of the given t point
+    map.path.getPoint(this.follower.t, this.follower.vec);
+
+    // set the x and y of our enemy to the received from the previous step
+    this.setPosition(this.follower.vec.x, this.follower.vec.y);
+  },
+  update: function (time, delta) {
+    // move the t point along the path, 0 is the start and 0 is the end
+    this.follower.t += ENEMY_SPEED * delta;
+
+    // get the new x and y coordinates in vec
+    map.path.getPoint(this.follower.t, this.follower.vec);
+
+    // update enemy x and y to the newly obtained x and y
+    this.setPosition(this.follower.vec.x, this.follower.vec.y);
+    // if we have reached the end of the path, remove the enemy
+    if (this.follower.t >= 1) {
+      this.setActive(false);
+      this.setVisible(false);
+    }
+  },
+});

@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 
+const BOARD_WIDTH = 640,
+  BOARD_HEIGHT = 512;
 const SPRITE_ATLAS_NAME = "sprites";
 const TANK_IMG_NAME = "36.png";
 // 5, 11, 17
@@ -16,8 +18,8 @@ const entities = {
 };
 
 const map = {
-  path: null,
-  graphics: null,
+  path: null as Phaser.Curves.Path | null,
+  graphics: null as Phaser.GameObjects.Graphics | null,
 };
 
 function setupPlayerSprite(sprite: Phaser.GameObjects.Image) {
@@ -37,6 +39,49 @@ function setupPlayerSprite(sprite: Phaser.GameObjects.Image) {
   });
 }
 
+function drawGrid(graphics: Phaser.GameObjects.Graphics) {
+  const lineWidth = 2;
+  const halfWidth = Math.floor(lineWidth / 2);
+  graphics.lineStyle(2, 0x0000ff, 0.5);
+  for (var i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
+    graphics.moveTo(0, i * TILE_SIZE - halfWidth);
+    graphics.lineTo(BOARD_WIDTH, i * TILE_SIZE - halfWidth);
+  }
+  for (var j = 0; j < Math.floor(BOARD_WIDTH / TILE_SIZE); j++) {
+    graphics.moveTo(j * TILE_SIZE - halfWidth, 0);
+    graphics.lineTo(j * TILE_SIZE - halfWidth, BOARD_HEIGHT);
+  }
+  graphics.strokePath();
+}
+
+function drawEnemyPath(
+  scene: Phaser.Scene,
+  graphics: Phaser.GameObjects.Graphics
+) {
+  // parameters are the start x and y of our path
+  const HALF_TILE = TILE_SIZE / 2;
+  const lineWidth = 2;
+  const lineOffset = lineWidth / 2;
+  const path = scene.add.path(
+    3 * TILE_SIZE - HALF_TILE - lineOffset,
+    -TILE_SIZE
+  );
+  path.lineTo(
+    3 * TILE_SIZE - HALF_TILE - lineOffset,
+    6 * TILE_SIZE - HALF_TILE - lineOffset
+  );
+  path.lineTo(
+    15 * TILE_SIZE - HALF_TILE - lineOffset,
+    6 * TILE_SIZE - HALF_TILE - lineOffset
+  );
+  path.lineTo(15 * TILE_SIZE - HALF_TILE - lineOffset, BOARD_HEIGHT);
+
+  graphics.lineStyle(lineWidth, 0xffffff, 1);
+
+  path.draw(graphics);
+
+  return path;
+}
 class Scene extends Phaser.Scene {
   nextEnemy: Number;
   constructor() {
@@ -73,30 +118,19 @@ class Scene extends Phaser.Scene {
     });
 
     entities.player[1] = this.add
-      .image(32, 32, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
+      .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
       .setOrigin(0, 0)
       .setInteractive();
 
     setupPlayerSprite(entities.player[1]);
 
-    // entities.enemies.push(
-    //   this.add.image(0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME).setOrigin(0, 0)
-    // );
-
     // this graphics element is only for visualization,
     // its not related to our path
     map.graphics = this.add.graphics();
+    drawGrid(map.graphics);
 
     // the path for our enemies
-    // parameters are the start x and y of our path
-    map.path = this.add.path(96, -32);
-    map.path.lineTo(96, 164);
-    map.path.lineTo(480, 164);
-    map.path.lineTo(480, 544);
-
-    map.graphics.lineStyle(3, 0xffffff, 1);
-    // visualize the path
-    map.path.draw(map.graphics);
+    map.path = drawEnemyPath(this, map.graphics);
 
     entities.enemyGroup = this.add.group({
       classType: Enemy,
@@ -125,14 +159,17 @@ class Scene extends Phaser.Scene {
 var config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "content",
-  width: 640,
-  height: 512,
+  width: BOARD_WIDTH,
+  height: BOARD_HEIGHT,
   scene: Scene,
 };
 
 const game = new Phaser.Game(config);
 const ENEMY_SPEED = 1 / 10000;
 
+// Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.
+// And user lands types are difficult because it's using classes...
+// oh well, it works? Maybe we can PR on Phaser Github
 const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
   initialize: function Enemy(scene) {

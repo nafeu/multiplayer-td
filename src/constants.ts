@@ -6,7 +6,7 @@ export const SPRITE_SIZE = 32;
 
 export const SPRITE_ATLAS_NAME = 'sprites';
 
-export const TANK_IMG_NAME = '36.png';
+export const TANK_IMG_NAME = '18.png';
 export const BULLET_IMG_NAME = '17.png';
 export const ENEMY_IMG_NAME = '05.png';
 
@@ -23,7 +23,7 @@ export const TURRET_FIRE_RATE_MS = 100;
 export const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 export const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
 
-export const VALID_TURRENT_POSITION = 0;
+export const VALID_TURRET_POSITION = 0;
 
 export const ORIENTATION_HORIZONTAL = 'horizontal';
 export const ORIENTATION_VERTICAL = 'vertical';

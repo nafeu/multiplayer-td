@@ -9,6 +9,11 @@ const BULLET_IMG_NAME = "17.png";
 const ENEMY_IMG_NAME = "05.png";
 
 const TILE_SIZE = 32; // matches sprite size
+const BULLET_DAMAGE = 50;
+const ENEMY_HP = 1000;
+const ENEMY_SPAWN_RATE_MS = 1000;
+const TURRET_FIRE_RANGE = 100;
+const TURRET_FIRE_RATE_MS = 100;
 
 const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
@@ -193,17 +198,23 @@ class Scene extends Phaser.Scene {
       runChildUpdate: true,
     });
 
-    entities.enemyGroup = this.add.group({
+    entities.enemyGroup = this.physics.add.group({
       classType: Enemy,
       runChildUpdate: true,
     });
     // value used to control spawn rate of enemies
     this.nextEnemy = 0;
 
-    entities.bullets = this.add.group({
+    entities.bullets = this.physics.add.group({
       classType: Bullet,
       runChildUpdate: true,
     });
+
+    this.physics.add.overlap(
+      entities.enemyGroup,
+      entities.bullets,
+      damageEnemy
+    );
   }
 
   update(time, delta) {
@@ -217,7 +228,7 @@ class Scene extends Phaser.Scene {
         // place the enemy at the start of the path
         enemy.startOnPath();
 
-        this.nextEnemy = time + 2000;
+        this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
       }
     }
   }
@@ -228,6 +239,9 @@ var config: Phaser.Types.Core.GameConfig = {
   parent: "content",
   width: BOARD_WIDTH,
   height: BOARD_HEIGHT,
+  physics: {
+    default: "arcade",
+  },
   scene: Scene,
 };
 
@@ -242,6 +256,16 @@ const Enemy = new Phaser.Class({
   initialize: function Enemy(scene) {
     Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", ENEMY_IMG_NAME);
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
+    this.hp = ENEMY_HP;
+  },
+  receiveDamage: function (damage) {
+    this.hp -= damage;
+
+    // if hp drops below 0 we deactivate this enemy
+    if (this.hp <= 0) {
+      this.setActive(false);
+      this.setVisible(false);
+    }
   },
   startOnPath: function () {
     // set the t parameter at the start of the path
@@ -290,7 +314,7 @@ const Turret = new Phaser.Class({
     map.turretValid[i][j] = 1;
   },
   fire: function () {
-    var enemy = getEnemy(this.x, this.y, 100);
+    var enemy = getEnemy(this.x, this.y, TURRET_FIRE_RANGE);
     if (enemy) {
       var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
       addBullet(this.x, this.y, angle);
@@ -302,7 +326,7 @@ const Turret = new Phaser.Class({
     // time to shoot
     if (time > this.nextTic) {
       this.fire();
-      this.nextTic = time + 1000;
+      this.nextTic = time + TURRET_FIRE_RATE_MS;
     }
   },
 });
@@ -321,7 +345,7 @@ const Bullet = new Phaser.Class({
     this.dx = 0;
     this.dy = 0;
     this.lifespan = 0;
-    this.speed = Phaser.Math.GetSpeed(600, 1);
+    this.speed = Phaser.Math.GetSpeed(300, 1);
   },
   fire: function (x, y, angle) {
     this.setActive(true);
@@ -363,4 +387,16 @@ function getEnemy(x, y, distance) {
       return enemyUnits[i];
   }
   return false;
+}
+
+function damageEnemy(enemy, bullet) {
+  // only if both enemy and bullet are alive
+  if (enemy.active === true && bullet.active === true) {
+    // we remove the bullet right away
+    bullet.setActive(false);
+    bullet.setVisible(false);
+
+    // decrease the enemy hp with BULLET_DAMAGE
+    enemy.receiveDamage(BULLET_DAMAGE);
+  }
 }

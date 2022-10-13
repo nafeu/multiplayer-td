@@ -9,17 +9,55 @@ const ENEMY_IMG_NAME = "05.png";
 
 const TILE_SIZE = 32; // matches sprite size
 
+const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
+const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
+const VALID_TURRENT_POSITION = 0;
+const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
+  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRENT_POSITION)
+);
+
+const PATH_SEGMENTS = [
+  { orientation: "vertical", start: { x: 2, y: 0 }, size: 6 },
+  { orientation: "horizontal", start: { x: 2, y: 5 }, size: 13 },
+  { orientation: "vertical", start: { x: 14, y: 5 }, size: 11 },
+];
+
+const clone = (b) => JSON.parse(JSON.stringify(b));
+
+(function removePathTilesForTurrent(map, segments) {
+  const INVALID = 1;
+  segments.forEach((args) => {
+    const { orientation, start, size } = args;
+
+    const current = { ...start };
+
+    for (let i = 0; i < size; i++) {
+      map[current.y][current.x] = INVALID;
+
+      if (orientation === "vertical") {
+        current.y += 1;
+      } else if (orientation === "horizontal") {
+        current.x += 1;
+      } else {
+        throw new Error("Invalid Path Segment");
+      }
+    }
+  });
+})(MAP_GRID, PATH_SEGMENTS);
+
 const entities = {
   player: {
     1: null,
   },
   enemies: [],
   enemyGroup: null,
+  turretGroup: null,
 };
 
 const map = {
   path: null as Phaser.Curves.Path | null,
   graphics: null as Phaser.GameObjects.Graphics | null,
+  turretValid: MAP_GRID,
 };
 
 function setupPlayerSprite(sprite: Phaser.GameObjects.Image) {
@@ -82,6 +120,21 @@ function drawEnemyPath(
 
   return path;
 }
+
+function placeTurret(pointer) {
+  var i = Math.floor(pointer.y / TILE_SIZE);
+  var j = Math.floor(pointer.x / TILE_SIZE);
+
+  if (map.turretValid[i][j] === VALID_TURRENT_POSITION) {
+    var turret = entities.turretGroup.get();
+    if (turret) {
+      turret.setActive(true);
+      turret.setVisible(true);
+      turret.place(i, j);
+    }
+  }
+}
+
 class Scene extends Phaser.Scene {
   nextEnemy: Number;
   constructor() {
@@ -116,6 +169,7 @@ class Scene extends Phaser.Scene {
         entities.player[1].clearTint();
       }
     });
+    this.input.on("pointerdown", placeTurret);
 
     entities.player[1] = this.add
       .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
@@ -131,6 +185,11 @@ class Scene extends Phaser.Scene {
 
     // the path for our enemies
     map.path = drawEnemyPath(this, map.graphics);
+
+    entities.turretGroup = this.add.group({
+      classType: Turret,
+      runChildUpdate: true,
+    });
 
     entities.enemyGroup = this.add.group({
       classType: Enemy,
@@ -199,6 +258,26 @@ const Enemy = new Phaser.Class({
     if (this.follower.t >= 1) {
       this.setActive(false);
       this.setVisible(false);
+    }
+  },
+});
+
+const Turret = new Phaser.Class({
+  Extends: Phaser.GameObjects.Image,
+  initialize: function Turret(scene) {
+    Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", TANK_IMG_NAME);
+    this.nextTic = 0;
+  },
+  // we will place the turret according to the grid
+  place: function (i, j) {
+    this.y = i * TILE_SIZE + TILE_SIZE / 2;
+    this.x = j * TILE_SIZE + TILE_SIZE / 2;
+    map.turretValid[i][j] = 1;
+  },
+  update: function (time, delta) {
+    // time to shoot
+    if (time > this.nextTic) {
+      this.nextTic = time + 1000;
     }
   },
 });

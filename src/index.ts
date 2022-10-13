@@ -4,6 +4,7 @@ const BOARD_WIDTH = 640,
   BOARD_HEIGHT = 512;
 const SPRITE_ATLAS_NAME = "sprites";
 const TANK_IMG_NAME = "36.png";
+const BULLET_IMG_NAME = "17.png";
 // 5, 11, 17
 const ENEMY_IMG_NAME = "05.png";
 
@@ -49,9 +50,10 @@ const entities = {
   player: {
     1: null,
   },
-  enemies: [],
-  enemyGroup: null,
-  turretGroup: null,
+  enemies: [], // prolly deprecate
+  bullets: null as Phaser.GameObjects.Group | null,
+  enemyGroup: null as Phaser.GameObjects.Group | null,
+  turretGroup: null as Phaser.GameObjects.Group | null,
 };
 
 const map = {
@@ -195,7 +197,13 @@ class Scene extends Phaser.Scene {
       classType: Enemy,
       runChildUpdate: true,
     });
+    // value used to control spawn rate of enemies
     this.nextEnemy = 0;
+
+    entities.bullets = this.add.group({
+      classType: Bullet,
+      runChildUpdate: true,
+    });
   }
 
   update(time, delta) {
@@ -265,7 +273,14 @@ const Enemy = new Phaser.Class({
 const Turret = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
   initialize: function Turret(scene) {
-    Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", TANK_IMG_NAME);
+    Phaser.GameObjects.Image.call(
+      this,
+      scene,
+      0,
+      0,
+      SPRITE_ATLAS_NAME,
+      TANK_IMG_NAME
+    );
     this.nextTic = 0;
   },
   // we will place the turret according to the grid
@@ -274,10 +289,78 @@ const Turret = new Phaser.Class({
     this.x = j * TILE_SIZE + TILE_SIZE / 2;
     map.turretValid[i][j] = 1;
   },
+  fire: function () {
+    var enemy = getEnemy(this.x, this.y, 100);
+    if (enemy) {
+      var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+      addBullet(this.x, this.y, angle);
+      // uncomment below if you want the turret sprite to rotate to match bullet angle
+      // this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
+    }
+  },
   update: function (time, delta) {
     // time to shoot
     if (time > this.nextTic) {
+      this.fire();
       this.nextTic = time + 1000;
     }
   },
 });
+
+const Bullet = new Phaser.Class({
+  Extends: Phaser.GameObjects.Image,
+  initialize: function Bullet(scene) {
+    Phaser.GameObjects.Image.call(
+      this,
+      scene,
+      0,
+      0,
+      SPRITE_ATLAS_NAME,
+      BULLET_IMG_NAME
+    );
+    this.dx = 0;
+    this.dy = 0;
+    this.lifespan = 0;
+    this.speed = Phaser.Math.GetSpeed(600, 1);
+  },
+  fire: function (x, y, angle) {
+    this.setActive(true);
+    this.setVisible(true);
+    //  Bullets fire from the middle of the screen to the given x/y
+    this.setPosition(x, y);
+    //  we don't need to rotate the bullets as they are round
+    //  this.setRotation(angle);
+    this.dx = Math.cos(angle);
+    this.dy = Math.sin(angle);
+    this.lifespan = 300;
+  },
+  update: function (time, delta) {
+    this.lifespan -= delta;
+    this.x += this.dx * (this.speed * delta);
+    this.y += this.dy * (this.speed * delta);
+    if (this.lifespan <= 0) {
+      this.setActive(false);
+      this.setVisible(false);
+    }
+  },
+});
+
+function addBullet(x, y, angle) {
+  var bullet = entities.bullets.get();
+  if (bullet) {
+    bullet.fire(x, y, angle);
+  }
+}
+
+function getEnemy(x, y, distance) {
+  var enemyUnits = entities.enemyGroup.getChildren();
+  for (var i = 0; i < enemyUnits.length; i++) {
+    if (
+      enemyUnits[i].active &&
+      Phaser.Math.Distance.Between(x, y, enemyUnits[i].x, enemyUnits[i].y) <=
+        distance
+    )
+      return enemyUnits[i];
+  }
+  return false;
+}

@@ -281,7 +281,6 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: Scene,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const game = new Phaser.Game(config);
 console.log('### Game', game);
 
@@ -360,7 +359,6 @@ const Turret = new Phaser.Class({
     );
     this.nextTick = 0;
     this.on('pointerdown', function (pointer) {
-      // console.log("### [Turret] removing...", this);
       this.destroy();
       map.turretValid[this.tilePositionRow][this.tilePositionCol] =
         VALID_TURRET_POSITION;
@@ -368,7 +366,6 @@ const Turret = new Phaser.Class({
   },
 
   place: function (i, j) {
-    // console.log("### [Turret] placing...", this, i, j);
     this.tilePositionRow = i;
     this.tilePositionCol = j;
 
@@ -383,7 +380,6 @@ const Turret = new Phaser.Class({
   },
 
   fire: function () {
-    console.log('### fire');
     const enemy = getEnemy(this.x, this.y, TURRET_FIRE_RANGE);
 
     if (enemy) {

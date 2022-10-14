@@ -1,4 +1,18 @@
 TODOS:
+□ need a way to have types of tanks (could be 5 out of a potential 10)
+□ implement 3 states
+	□ seige
+	□ preparing
+	□ move
+□ implement very simple path finding
+□ implement simple UI element when hovering over tiles
+□ Debug
+	□ hovering over tile which tile number
+	□ which tank is selected
+□ Research: how to hot-reload Phaser entities
+□ Usability: preconfigured maps
+
+BACKLOG:
 □ implement form to enter a game + your username
 □ handle client connection + disconnection
 □ implement game lobby and room logic

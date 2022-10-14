@@ -173,6 +173,7 @@ function placeTurret(pointer) {
 
 class Scene extends Phaser.Scene {
   nextEnemy: number;
+  playerHUD: Phaser.GameObjects.Text;
 
   constructor() {
     super('main');
@@ -244,9 +245,21 @@ class Scene extends Phaser.Scene {
       entities.bullets,
       damageEnemy
     );
+
+    this.playerHUD = this.add
+      .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
+        align: "right",
+      })
+      .setOrigin(1, 0);
   }
 
-  update(time) {
+  update(time, delta) {
+    this.playerHUD.setText(
+      `Tanks Available: ${
+        TURRET_SQUAD_SIZE - entities.turretGroup.getTotalUsed()
+      }/${TURRET_SQUAD_SIZE}`
+    );
+
     // if its time for the next enemy
     if (time > this.nextEnemy) {
       const enemy = entities.enemyGroup.get();
@@ -276,6 +289,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const game = new Phaser.Game(config);
+console.log("### Game", game);
 
 /*
   Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.

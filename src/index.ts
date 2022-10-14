@@ -18,15 +18,17 @@ import {
   TILE_SIZE,
   TURRET_FIRE_RANGE,
   TURRET_FIRE_RATE_MS,
-  VALID_TURRENT_POSITION,
-} from './constants.ts';
+  VALID_TURRET_POSITION,
+  ENEMY_SPEED,
+  TURRET_SQUAD_SIZE,
+  INVALID_TURRENT_POSITION,
+  OCCUPIED_TURRET_POSITION,
+} from './constants';
 
-import { noop } from './utils.ts';
-
-const isDebugMode = window.location.href.indexOf('debug=true') != -1;
+const isDebugMode = true; // window.location.href.indexOf('debug=true') != -1;
 
 const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
-  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRENT_POSITION)
+  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRET_POSITION)
 );
 
 const PATH_SEGMENTS = [
@@ -47,19 +49,18 @@ const PATH_SEGMENTS = [
   },
 ];
 
-(function removePathTilesForTurrent(map, segments) {
-  const INVALID = 1;
+(function removePathTilesForTurret(map, segments) {
   segments.forEach((args) => {
     const { orientation, start, size } = args;
 
     const current = { ...start };
 
     for (let i = 0; i < size; i++) {
-      map[current.y][current.x] = INVALID;
+      map[current.y][current.x] = INVALID_TURRENT_POSITION;
 
-      if (orientation === 'vertical') {
+      if (orientation === ORIENTATION_VERTICAL) {
         current.y += 1;
-      } else if (orientation === 'horizontal') {
+      } else if (orientation === ORIENTATION_HORIZONTAL) {
         current.x += 1;
       } else {
         throw new Error('Invalid Path Segment');
@@ -151,19 +152,22 @@ function placeTurret(pointer) {
   const i = Math.floor(pointer.y / TILE_SIZE);
   const j = Math.floor(pointer.x / TILE_SIZE);
 
-  if (map.turretValid[i][j] === VALID_TURRENT_POSITION) {
+  if (map.turretValid[i][j] === VALID_TURRET_POSITION) {
     const turret = entities.turretGroup.get();
 
     if (turret) {
       turret.setActive(true);
       turret.setVisible(true);
       turret.place(i, j);
+      // so it can receive pointer events
+      turret.setInteractive();
     }
   }
 }
 
 class Scene extends Phaser.Scene {
   nextEnemy: number;
+  playerHUD: Phaser.GameObjects.Text;
 
   constructor() {
     super('main');
@@ -183,27 +187,26 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
-    this.input.on('pointerdown', (pointer) => {
-      if (entities.player[1]._isDown) {
-        noop();
-      } else if (entities.player[1]._isSelected) {
-        entities.player[1].x = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE;
-        entities.player[1].y = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE;
-        entities.player[1]._isSelected = false;
-        entities.player[1].clearTint();
-      } else {
-        entities.player[1].clearTint();
-      }
-    });
-
+    // this.input.on("pointerdown", function (pointer) {
+    //   if (entities.player[1]._isDown) {
+    //   } else if (entities.player[1]._isSelected) {
+    //     entities.player[1].x = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE;
+    //     entities.player[1].y = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE;
+    //     entities.player[1]._isSelected = false;
+    //     entities.player[1].clearTint();
+    //   } else {
+    //     // only deselect if not clicked on
+    //     entities.player[1].clearTint();
+    //   }
+    // });
     this.input.on('pointerdown', placeTurret);
 
-    entities.player[1] = this.add
-      .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
-      .setOrigin(0, 0)
-      .setInteractive();
+    // entities.player[1] = this.add
+    //   .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
+    //   .setOrigin(0, 0)
+    //   .setInteractive();
 
-    setupPlayerSprite(entities.player[1]);
+    // setupPlayerSprite(entities.player[1]);
 
     map.graphics = this.add.graphics();
     if (isDebugMode) {
@@ -215,6 +218,7 @@ class Scene extends Phaser.Scene {
     entities.turretGroup = this.add.group({
       classType: Turret,
       runChildUpdate: true,
+      maxSize: TURRET_SQUAD_SIZE,
     });
 
     entities.enemyGroup = this.physics.add.group({
@@ -235,9 +239,21 @@ class Scene extends Phaser.Scene {
       entities.bullets,
       damageEnemy
     );
+
+    this.playerHUD = this.add
+      .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
+        align: 'right',
+      })
+      .setOrigin(1, 0);
   }
 
-  update(time) {
+  update(time, delta) {
+    this.playerHUD.setText(
+      `Tanks Available: ${
+        TURRET_SQUAD_SIZE - entities.turretGroup.getTotalUsed()
+      }/${TURRET_SQUAD_SIZE}`
+    );
+
     // if its time for the next enemy
     if (time > this.nextEnemy) {
       const enemy = entities.enemyGroup.get();
@@ -265,9 +281,8 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: Scene,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const game = new Phaser.Game(config);
-const ENEMY_SPEED = 1 / 10000;
+console.log('### Game', game);
 
 /*
   Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.
@@ -279,7 +294,14 @@ const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
 
   initialize: function Enemy(scene) {
-    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', ENEMY_IMG_NAME);
+    Phaser.GameObjects.Image.call(
+      this,
+      scene,
+      0,
+      0,
+      SPRITE_ATLAS_NAME,
+      ENEMY_IMG_NAME
+    );
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
@@ -335,17 +357,26 @@ const Turret = new Phaser.Class({
       SPRITE_ATLAS_NAME,
       TANK_IMG_NAME
     );
-    this.nextTic = 0;
+    this.nextTick = 0;
+    this.on('pointerdown', function (pointer) {
+      this.destroy();
+      map.turretValid[this.tilePositionRow][this.tilePositionCol] =
+        VALID_TURRET_POSITION;
+    });
   },
 
   place: function (i, j) {
+    this.tilePositionRow = i;
+    this.tilePositionCol = j;
+
     const GRID_PLACEMENT_Y = i * TILE_SIZE + TILE_SIZE / 2;
     const GRID_PLACEMENT_X = j * TILE_SIZE + TILE_SIZE / 2;
 
     this.y = GRID_PLACEMENT_Y;
     this.x = GRID_PLACEMENT_X;
 
-    map.turretValid[i][j] = 1;
+    map.turretValid[this.tilePositionRow][this.tilePositionCol] =
+      OCCUPIED_TURRET_POSITION;
   },
 
   fire: function () {
@@ -357,13 +388,12 @@ const Turret = new Phaser.Class({
       this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
     }
   },
-
   update: function (time) {
-    const shouldShoot = time > this.nextTic;
+    const shouldShoot = time > this.nextTick;
 
     if (shouldShoot) {
       this.fire();
-      this.nextTic = time + TURRET_FIRE_RATE_MS;
+      this.nextTick = time + TURRET_FIRE_RATE_MS;
     }
   },
 });

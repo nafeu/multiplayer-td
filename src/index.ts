@@ -19,11 +19,9 @@ import {
   TURRET_FIRE_RANGE,
   TURRET_FIRE_RATE_MS,
   VALID_TURRET_POSITION,
-} from './constants.ts';
+} from './constants';
 
-import { noop } from './utils.ts';
-
-const isDebugMode = true;// window.location.href.indexOf('debug=true') != -1;
+const isDebugMode = true; // window.location.href.indexOf('debug=true') != -1;
 
 const ENEMY_SPEED = 1 / 10000;
 const TURRET_SQUAD_SIZE = 5;
@@ -52,8 +50,6 @@ const PATH_SEGMENTS = [
     size: 11,
   },
 ];
-
-const clone = (b) => JSON.parse(JSON.stringify(b));
 
 (function removePathTilesForTurret(map, segments) {
   segments.forEach((args) => {
@@ -205,7 +201,7 @@ class Scene extends Phaser.Scene {
     //     entities.player[1].clearTint();
     //   }
     // });
-    this.input.on("pointerdown", placeTurret);
+    this.input.on('pointerdown', placeTurret);
 
     // entities.player[1] = this.add
     //   .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
@@ -248,7 +244,7 @@ class Scene extends Phaser.Scene {
 
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
-        align: "right",
+        align: 'right',
       })
       .setOrigin(1, 0);
   }
@@ -289,7 +285,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const game = new Phaser.Game(config);
-console.log("### Game", game);
+console.log('### Game', game);
 
 /*
   Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.
@@ -301,7 +297,14 @@ const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
 
   initialize: function Enemy(scene) {
-    Phaser.GameObjects.Image.call(this, scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
+    Phaser.GameObjects.Image.call(
+      this,
+      scene,
+      0,
+      0,
+      SPRITE_ATLAS_NAME,
+      ENEMY_IMG_NAME
+    );
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
@@ -358,7 +361,7 @@ const Turret = new Phaser.Class({
       TANK_IMG_NAME
     );
     this.nextTick = 0;
-    this.on("pointerdown", function (pointer) {
+    this.on('pointerdown', function (pointer) {
       // console.log("### [Turret] removing...", this);
       this.destroy();
       map.turretValid[this.tilePositionRow][this.tilePositionCol] =
@@ -377,11 +380,12 @@ const Turret = new Phaser.Class({
     this.y = GRID_PLACEMENT_Y;
     this.x = GRID_PLACEMENT_X;
 
-    map.turretValid[this.tilePositionRow][this.tilePositionCol] = OCCUPIED_TURRET_POSITION;
+    map.turretValid[this.tilePositionRow][this.tilePositionCol] =
+      OCCUPIED_TURRET_POSITION;
   },
 
   fire: function () {
-    console.log('### fire')
+    console.log('### fire');
     const enemy = getEnemy(this.x, this.y, TURRET_FIRE_RANGE);
 
     if (enemy) {

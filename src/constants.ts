@@ -13,17 +13,20 @@ export const ENEMY_IMG_NAME = '05.png';
 export const TILE_SIZE = SPRITE_SIZE;
 
 export const BULLET_DAMAGE = 50;
-
 export const ENEMY_HP = 1000;
 export const ENEMY_SPAWN_RATE_MS = 1000;
+export const ENEMY_SPEED = 1 / 10000;
 
 export const TURRET_FIRE_RANGE = 100;
 export const TURRET_FIRE_RATE_MS = 100;
+export const TURRET_SQUAD_SIZE = 5;
 
 export const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 export const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
 
 export const VALID_TURRET_POSITION = 0;
+export const INVALID_TURRENT_POSITION = -1;
+export const OCCUPIED_TURRET_POSITION = 1;
 
 export const ORIENTATION_HORIZONTAL = 'horizontal';
 export const ORIENTATION_VERTICAL = 'vertical';

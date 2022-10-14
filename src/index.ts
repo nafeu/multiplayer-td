@@ -19,15 +19,13 @@ import {
   TURRET_FIRE_RANGE,
   TURRET_FIRE_RATE_MS,
   VALID_TURRET_POSITION,
+  ENEMY_SPEED,
+  TURRET_SQUAD_SIZE,
+  INVALID_TURRENT_POSITION,
+  OCCUPIED_TURRET_POSITION,
 } from './constants';
 
 const isDebugMode = true; // window.location.href.indexOf('debug=true') != -1;
-
-const ENEMY_SPEED = 1 / 10000;
-const TURRET_SQUAD_SIZE = 5;
-
-const INVALID_TURRENT_POSITION = -1;
-const OCCUPIED_TURRET_POSITION = 1;
 
 const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
   Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRET_POSITION)

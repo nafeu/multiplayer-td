@@ -1,34 +1,51 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 
-const BOARD_WIDTH = 640,
-  BOARD_HEIGHT = 512;
-const SPRITE_ATLAS_NAME = "sprites";
-const TANK_IMG_NAME = "36.png";
-const BULLET_IMG_NAME = "17.png";
-// 5, 11, 17
-const ENEMY_IMG_NAME = "05.png";
+import {
+  BOARD_BACKGROUND_COLOR,
+  BOARD_HEIGHT,
+  BOARD_HEIGHT_TILE,
+  BOARD_WIDTH,
+  BOARD_WIDTH_TILE,
+  BULLET_DAMAGE,
+  BULLET_IMG_NAME,
+  ENEMY_HP,
+  ENEMY_IMG_NAME,
+  ENEMY_SPAWN_RATE_MS,
+  ORIENTATION_HORIZONTAL,
+  ORIENTATION_VERTICAL,
+  SPRITE_ATLAS_NAME,
+  TANK_IMG_NAME,
+  TILE_SIZE,
+  TURRET_FIRE_RANGE,
+  TURRET_FIRE_RATE_MS,
+  VALID_TURRENT_POSITION,
+} from './constants.ts';
 
-const TILE_SIZE = 32; // matches sprite size
-const BULLET_DAMAGE = 50;
-const ENEMY_HP = 1000;
-const ENEMY_SPAWN_RATE_MS = 1000;
-const TURRET_FIRE_RANGE = 100;
-const TURRET_FIRE_RATE_MS = 100;
+import { noop } from './utils.ts';
 
-const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
-const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
-const VALID_TURRENT_POSITION = 0;
+const isDebugMode = window.location.href.indexOf('debug=true') != -1;
+
 const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
   Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRENT_POSITION)
 );
 
 const PATH_SEGMENTS = [
-  { orientation: "vertical", start: { x: 2, y: 0 }, size: 6 },
-  { orientation: "horizontal", start: { x: 2, y: 5 }, size: 13 },
-  { orientation: "vertical", start: { x: 14, y: 5 }, size: 11 },
+  {
+    orientation: ORIENTATION_VERTICAL,
+    start: { x: 2, y: 0 },
+    size: 6,
+  },
+  {
+    orientation: ORIENTATION_HORIZONTAL,
+    start: { x: 2, y: 5 },
+    size: 13,
+  },
+  {
+    orientation: ORIENTATION_VERTICAL,
+    start: { x: 14, y: 5 },
+    size: 11,
+  },
 ];
-
-const clone = (b) => JSON.parse(JSON.stringify(b));
 
 (function removePathTilesForTurrent(map, segments) {
   const INVALID = 1;
@@ -40,12 +57,12 @@ const clone = (b) => JSON.parse(JSON.stringify(b));
     for (let i = 0; i < size; i++) {
       map[current.y][current.x] = INVALID;
 
-      if (orientation === "vertical") {
+      if (orientation === 'vertical') {
         current.y += 1;
-      } else if (orientation === "horizontal") {
+      } else if (orientation === 'horizontal') {
         current.x += 1;
       } else {
-        throw new Error("Invalid Path Segment");
+        throw new Error('Invalid Path Segment');
       }
     }
   });
@@ -55,7 +72,6 @@ const entities = {
   player: {
     1: null,
   },
-  enemies: [], // prolly deprecate
   bullets: null as Phaser.GameObjects.Group | null,
   enemyGroup: null as Phaser.GameObjects.Group | null,
   turretGroup: null as Phaser.GameObjects.Group | null,
@@ -68,17 +84,17 @@ const map = {
 };
 
 function setupPlayerSprite(sprite: Phaser.GameObjects.Image) {
-  sprite.on("pointerdown", function (pointer) {
+  sprite.on('pointerdown', () => {
     this._isDown = true;
     this._isSelected = !this._isSelected;
     this.setTint(0xff0000);
   });
 
-  sprite.on("pointerout", function (pointer) {
+  sprite.on('pointerout', () => {
     this._isDown && this.clearTint();
   });
 
-  sprite.on("pointerup", function (pointer) {
+  sprite.on('pointerup', () => {
     this._isDown = false;
     this._isSelected || this.clearTint();
   });
@@ -88,14 +104,17 @@ function drawGrid(graphics: Phaser.GameObjects.Graphics) {
   const lineWidth = 2;
   const halfWidth = Math.floor(lineWidth / 2);
   graphics.lineStyle(2, 0x0000ff, 0.5);
-  for (var i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
+
+  for (let i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
     graphics.moveTo(0, i * TILE_SIZE - halfWidth);
     graphics.lineTo(BOARD_WIDTH, i * TILE_SIZE - halfWidth);
   }
-  for (var j = 0; j < Math.floor(BOARD_WIDTH / TILE_SIZE); j++) {
+
+  for (let j = 0; j < Math.floor(BOARD_WIDTH / TILE_SIZE); j++) {
     graphics.moveTo(j * TILE_SIZE - halfWidth, 0);
     graphics.lineTo(j * TILE_SIZE - halfWidth, BOARD_HEIGHT);
   }
+
   graphics.strokePath();
 }
 
@@ -103,10 +122,10 @@ function drawEnemyPath(
   scene: Phaser.Scene,
   graphics: Phaser.GameObjects.Graphics
 ) {
-  // parameters are the start x and y of our path
   const HALF_TILE = TILE_SIZE / 2;
   const lineWidth = 2;
   const lineOffset = lineWidth / 2;
+
   const path = scene.add.path(
     3 * TILE_SIZE - HALF_TILE - lineOffset,
     -TILE_SIZE
@@ -129,11 +148,12 @@ function drawEnemyPath(
 }
 
 function placeTurret(pointer) {
-  var i = Math.floor(pointer.y / TILE_SIZE);
-  var j = Math.floor(pointer.x / TILE_SIZE);
+  const i = Math.floor(pointer.y / TILE_SIZE);
+  const j = Math.floor(pointer.x / TILE_SIZE);
 
   if (map.turretValid[i][j] === VALID_TURRENT_POSITION) {
-    var turret = entities.turretGroup.get();
+    const turret = entities.turretGroup.get();
+
     if (turret) {
       turret.setActive(true);
       turret.setVisible(true);
@@ -143,40 +163,40 @@ function placeTurret(pointer) {
 }
 
 class Scene extends Phaser.Scene {
-  nextEnemy: Number;
+  nextEnemy: number;
+
   constructor() {
-    super("main");
+    super('main');
   }
 
   preload() {
-    // Stole spritesheet from here:
-    // https://imgur.com/gallery/mewD6ts
-    // Used free web sheet editor here:
-    // https://free-tex-packer.com/app/
-
-    // load the game assets – enemy and turret atlas
-    this.load.path = "public/";
+    this.load.path = 'public/';
     this.load.atlas(
       SPRITE_ATLAS_NAME,
-      "assets/spritesheet.png",
-      "assets/spritesheet.json.text" // this .text is a hack to bypass bun dev server turning .json into ESM -- see: https://github.com/oven-sh/bun/issues/1213
+      'assets/spritesheet.png',
+      /*
+        ".text" is used to bypass bun dev server turning .json into ESM
+        See: https://github.com/oven-sh/bun/issues/1213
+      */
+      'assets/spritesheet.json.text'
     );
   }
 
   create() {
-    this.input.on("pointerdown", function (pointer) {
+    this.input.on('pointerdown', (pointer) => {
       if (entities.player[1]._isDown) {
+        noop();
       } else if (entities.player[1]._isSelected) {
         entities.player[1].x = Math.floor(pointer.x / TILE_SIZE) * TILE_SIZE;
         entities.player[1].y = Math.floor(pointer.y / TILE_SIZE) * TILE_SIZE;
         entities.player[1]._isSelected = false;
         entities.player[1].clearTint();
       } else {
-        // only deselect if not clicked on
         entities.player[1].clearTint();
       }
     });
-    this.input.on("pointerdown", placeTurret);
+
+    this.input.on('pointerdown', placeTurret);
 
     entities.player[1] = this.add
       .image(0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME)
@@ -185,12 +205,11 @@ class Scene extends Phaser.Scene {
 
     setupPlayerSprite(entities.player[1]);
 
-    // this graphics element is only for visualization,
-    // its not related to our path
     map.graphics = this.add.graphics();
-    drawGrid(map.graphics);
+    if (isDebugMode) {
+      drawGrid(map.graphics);
+    }
 
-    // the path for our enemies
     map.path = drawEnemyPath(this, map.graphics);
 
     entities.turretGroup = this.add.group({
@@ -202,6 +221,7 @@ class Scene extends Phaser.Scene {
       classType: Enemy,
       runChildUpdate: true,
     });
+
     // value used to control spawn rate of enemies
     this.nextEnemy = 0;
 
@@ -217,15 +237,14 @@ class Scene extends Phaser.Scene {
     );
   }
 
-  update(time, delta) {
+  update(time) {
     // if its time for the next enemy
     if (time > this.nextEnemy) {
-      var enemy = entities.enemyGroup.get();
+      const enemy = entities.enemyGroup.get();
+
       if (enemy) {
         enemy.setActive(true);
         enemy.setVisible(true);
-
-        // place the enemy at the start of the path
         enemy.startOnPath();
 
         this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
@@ -234,39 +253,49 @@ class Scene extends Phaser.Scene {
   }
 }
 
-var config: Phaser.Types.Core.GameConfig = {
+const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  parent: "content",
+  parent: 'content',
   width: BOARD_WIDTH,
   height: BOARD_HEIGHT,
+  backgroundColor: BOARD_BACKGROUND_COLOR,
   physics: {
-    default: "arcade",
+    default: 'arcade',
   },
   scene: Scene,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const game = new Phaser.Game(config);
 const ENEMY_SPEED = 1 / 10000;
 
-// Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.
-// And user lands types are difficult because it's using classes...
-// oh well, it works? Maybe we can PR on Phaser Github
+/*
+  Type Definition in Phaser type files is incomplete, so Phaser.Class throws error.
+  And user lands types are difficult because it's using classes...
+  oh well, it works? Maybe we can PR on Phaser Github
+*/
+
 const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
+
   initialize: function Enemy(scene) {
-    Phaser.GameObjects.Image.call(this, scene, 0, 0, "sprites", ENEMY_IMG_NAME);
+    Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', ENEMY_IMG_NAME);
+
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
   },
+
   receiveDamage: function (damage) {
     this.hp -= damage;
 
-    // if hp drops below 0 we deactivate this enemy
-    if (this.hp <= 0) {
+    const shouldDeactivateEnemy = this.hp <= 0;
+
+    if (shouldDeactivateEnemy) {
       this.setActive(false);
       this.setVisible(false);
     }
   },
+
   startOnPath: function () {
     // set the t parameter at the start of the path
     this.follower.t = 0;
@@ -277,6 +306,7 @@ const Enemy = new Phaser.Class({
     // set the x and y of our enemy to the received from the previous step
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
   },
+
   update: function (time, delta) {
     // move the t point along the path, 0 is the start and 0 is the end
     this.follower.t += ENEMY_SPEED * delta;
@@ -307,24 +337,31 @@ const Turret = new Phaser.Class({
     );
     this.nextTic = 0;
   },
-  // we will place the turret according to the grid
+
   place: function (i, j) {
-    this.y = i * TILE_SIZE + TILE_SIZE / 2;
-    this.x = j * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_Y = i * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_X = j * TILE_SIZE + TILE_SIZE / 2;
+
+    this.y = GRID_PLACEMENT_Y;
+    this.x = GRID_PLACEMENT_X;
+
     map.turretValid[i][j] = 1;
   },
+
   fire: function () {
-    var enemy = getEnemy(this.x, this.y, TURRET_FIRE_RANGE);
+    const enemy = getEnemy(this.x, this.y, TURRET_FIRE_RANGE);
+
     if (enemy) {
-      var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
       addBullet(this.x, this.y, angle);
-      // uncomment below if you want the turret sprite to rotate to match bullet angle
-      // this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
+      this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
     }
   },
-  update: function (time, delta) {
-    // time to shoot
-    if (time > this.nextTic) {
+
+  update: function (time) {
+    const shouldShoot = time > this.nextTic;
+
+    if (shouldShoot) {
       this.fire();
       this.nextTic = time + TURRET_FIRE_RATE_MS;
     }
@@ -333,6 +370,7 @@ const Turret = new Phaser.Class({
 
 const Bullet = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
+
   initialize: function Bullet(scene) {
     Phaser.GameObjects.Image.call(
       this,
@@ -347,17 +385,16 @@ const Bullet = new Phaser.Class({
     this.lifespan = 0;
     this.speed = Phaser.Math.GetSpeed(300, 1);
   },
+
   fire: function (x, y, angle) {
     this.setActive(true);
     this.setVisible(true);
-    //  Bullets fire from the middle of the screen to the given x/y
     this.setPosition(x, y);
-    //  we don't need to rotate the bullets as they are round
-    //  this.setRotation(angle);
     this.dx = Math.cos(angle);
     this.dy = Math.sin(angle);
     this.lifespan = 300;
   },
+
   update: function (time, delta) {
     this.lifespan -= delta;
     this.x += this.dx * (this.speed * delta);
@@ -370,15 +407,17 @@ const Bullet = new Phaser.Class({
 });
 
 function addBullet(x, y, angle) {
-  var bullet = entities.bullets.get();
+  const bullet = entities.bullets.get();
+
   if (bullet) {
     bullet.fire(x, y, angle);
   }
 }
 
 function getEnemy(x, y, distance) {
-  var enemyUnits = entities.enemyGroup.getChildren();
-  for (var i = 0; i < enemyUnits.length; i++) {
+  const enemyUnits = entities.enemyGroup.getChildren();
+
+  for (let i = 0; i < enemyUnits.length; i++) {
     if (
       enemyUnits[i].active &&
       Phaser.Math.Distance.Between(x, y, enemyUnits[i].x, enemyUnits[i].y) <=
@@ -386,17 +425,17 @@ function getEnemy(x, y, distance) {
     )
       return enemyUnits[i];
   }
+
   return false;
 }
 
 function damageEnemy(enemy, bullet) {
-  // only if both enemy and bullet are alive
-  if (enemy.active === true && bullet.active === true) {
-    // we remove the bullet right away
+  const ifEnemyAndBulletAlive = enemy.active === true && bullet.active === true;
+
+  if (ifEnemyAndBulletAlive) {
     bullet.setActive(false);
     bullet.setVisible(false);
 
-    // decrease the enemy hp with BULLET_DAMAGE
     enemy.receiveDamage(BULLET_DAMAGE);
   }
 }

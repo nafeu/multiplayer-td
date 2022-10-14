@@ -1,8 +1,11 @@
-# Dev Setup
+# Multiplayer TD
 
-Use `bun` for local development.
+An experimental rougelike multiplayer tower defense game built with Phaser.io
 
 ## Install
+
+*Use `bun` for local development.*
+
 First get [bun](https://bun.sh/) by running:
 
 ```bash
@@ -19,9 +22,17 @@ for adding dependencies
 bun add new-dependency@version
 ```
 
-## Run Dev
+## Development
+
 Run dev server (served on [localhost:300X](http://localhost:3000))
 
 ```bash
 bun dev
 ```
+
+## Resources
+
+#### Spritesheets
+
+- [Tank Sprite](https://imgur.com/gallery/mewD6ts)
+- [Texture Packer](https://free-tex-packer.com/app/)

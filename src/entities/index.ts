@@ -4,7 +4,8 @@ const entities = {
   },
   bullets: null as Phaser.GameObjects.Group | null,
   enemyGroup: null as Phaser.GameObjects.Group | null,
-  turretGroup: null as Phaser.GameObjects.Group | null,
+  unitGroup: null as Phaser.GameObjects.Group | null,
+  selectedUnits: []
 };
 
 export default entities;

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import Turret from '../entities/Turret';
+import Unit from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 
@@ -14,9 +14,9 @@ import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
   TILE_SIZE,
-  TURRET_SQUAD_SIZE,
+  UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
-  VALID_TURRET_POSITION,
+  VALID_UNIT_POSITION,
   BULLET_DAMAGE
 } from '../constants';
 
@@ -42,19 +42,21 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
-    this.input.on('pointerdown', placeTurret);
+    disableBrowserRightClickMenu(this);
+    this.input.on('pointerdown', handleClickScene);
 
     map.graphics = this.add.graphics();
+
     if (isDebugMode) {
       drawGrid(map.graphics);
     }
 
     map.path = drawEnemyPath(this, map.graphics);
 
-    entities.turretGroup = this.add.group({
-      classType: Turret,
+    entities.unitGroup = this.add.group({
+      classType: Unit,
       runChildUpdate: true,
-      maxSize: TURRET_SQUAD_SIZE,
+      maxSize: UNIT_SQUAD_SIZE,
     });
 
     entities.enemyGroup = this.physics.add.group({
@@ -86,8 +88,8 @@ class Scene extends Phaser.Scene {
   update(time, delta) {
     this.playerHUD.setText(
       `Tanks Available: ${
-        TURRET_SQUAD_SIZE - entities.turretGroup.getTotalUsed()
-      }/${TURRET_SQUAD_SIZE}`
+        UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
+      }/${UNIT_SQUAD_SIZE}`
     );
 
     const shouldSpawnEnemy = time > this.nextEnemy
@@ -153,19 +155,19 @@ function drawEnemyPath(
   return path;
 }
 
-function placeTurret(pointer) {
+function placeUnit(pointer) {
   const i = Math.floor(pointer.y / TILE_SIZE);
   const j = Math.floor(pointer.x / TILE_SIZE);
 
-  if (map.turretValid[i][j] === VALID_TURRET_POSITION) {
-    const turret = entities.turretGroup.get();
+  if (map.unitValid[i][j] === VALID_UNIT_POSITION) {
+    const unit = entities.unitGroup.get();
 
-    if (turret) {
-      turret.setActive(true);
-      turret.setVisible(true);
-      turret.place(i, j);
+    if (unit) {
+      unit.setActive(true);
+      unit.setVisible(true);
+      unit.place(i, j);
       // so it can receive pointer events
-      turret.setInteractive();
+      unit.setInteractive();
     }
   }
 }
@@ -178,6 +180,26 @@ function damageEnemy(enemy, bullet) {
     bullet.setVisible(false);
 
     enemy.receiveDamage(BULLET_DAMAGE);
+  }
+}
+
+function disableBrowserRightClickMenu(scene) {
+  scene.input.mouse.disableContextMenu();
+}
+
+function handleClickScene(pointer) {
+  if (pointer.event.shiftKey) {
+    placeUnit(pointer);
+  }
+  else if (pointer.rightButtonDown()) {
+    entities.selectedUnits.forEach(selectedUnit => {
+      const i = Math.floor(pointer.y / TILE_SIZE);
+      const j = Math.floor(pointer.x / TILE_SIZE);
+
+      if (map.unitValid[i][j] === VALID_UNIT_POSITION) {
+        selectedUnit.move(i, j)
+      }
+    })
   }
 }
 

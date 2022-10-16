@@ -4,7 +4,7 @@ TODOS:
 	□ seige
 	□ preparing
 	□ move
-□ implement very simple path finding
+✔ implement very simple path finding @done (16-10-22 01:14)
 □ implement simple UI element when hovering over tiles
 □ Debug
 	□ hovering over tile which tile number

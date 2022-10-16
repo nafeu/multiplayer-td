@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-import entities from '../index'
-import map from '../../map'
+import entities from '../index';
+import map from '../../map';
 
 import {
   SPRITE_ATLAS_NAME,
@@ -13,10 +13,10 @@ import {
   UNIT_FIRE_RATE_MS,
   UNIT_SNAP_DISTANCE,
   UNIT_MOVING_TINT,
-  UNIT_SELECTED_TINT
+  UNIT_SELECTED_TINT,
 } from '../../constants';
 
-import { getPositionByTile } from '../../utils';
+import { generateId, getPositionByTile } from '../../utils';
 
 const Unit = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
@@ -29,6 +29,8 @@ const Unit = new Phaser.Class({
       SPRITE_ATLAS_NAME,
       TANK_IMG_NAME
     );
+
+    this.id = generateId('Unit');
 
     this.isMoving = false;
     this.target = new Phaser.Math.Vector2();
@@ -96,7 +98,6 @@ const Unit = new Phaser.Class({
       this.isMoving = true;
     }
 
-
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   },
@@ -117,13 +118,13 @@ const Unit = new Phaser.Class({
       this.nextTick = time + UNIT_FIRE_RATE_MS;
     }
 
-    const isMovingToTarget = this.isMoving
-      && (this.x !== this.target.x || this.y !== this.target.y)
+    const isMovingToTarget =
+      this.isMoving && (this.x !== this.target.x || this.y !== this.target.y);
 
     if (isMovingToTarget) {
       moveTowardsTarget(this, delta);
     }
-  }
+  },
 });
 
 function addBullet(x, y, angle) {
@@ -151,9 +152,11 @@ function getEnemy(x, y, distance) {
 
 function moveTowardsTarget(unit, delta) {
   const distance = Phaser.Math.Distance.Between(
-    unit.x, unit.y,
-    unit.target.x, unit.target.y
-  )
+    unit.x,
+    unit.y,
+    unit.target.x,
+    unit.target.y
+  );
 
   const isAtTarget = distance <= UNIT_SNAP_DISTANCE;
 
@@ -162,8 +165,8 @@ function moveTowardsTarget(unit, delta) {
     unit.y = unit.target.y;
     unit.isMoving = false;
   } else {
-    const activePathTargetX = getPositionByTile(unit.activePath[0].x)
-    const activePathTargetY = getPositionByTile(unit.activePath[0].y)
+    const activePathTargetX = getPositionByTile(unit.activePath[0].x);
+    const activePathTargetY = getPositionByTile(unit.activePath[0].y);
 
     const angle = Phaser.Math.Angle.Between(
       unit.x,
@@ -172,7 +175,7 @@ function moveTowardsTarget(unit, delta) {
       activePathTargetY
     );
 
-    unit.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG
+    unit.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
 
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
@@ -185,7 +188,7 @@ function moveTowardsTarget(unit, delta) {
       unit.y,
       activePathTargetX,
       activePathTargetY
-    )
+    );
 
     const isAtActiveTarget = distance <= UNIT_SNAP_DISTANCE;
 

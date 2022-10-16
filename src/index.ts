@@ -1,10 +1,6 @@
 import Phaser from 'phaser';
 
-import {
-  BOARD_BACKGROUND_COLOR,
-  BOARD_HEIGHT,
-  BOARD_WIDTH,
-} from './constants';
+import { BOARD_BACKGROUND_COLOR, BOARD_HEIGHT, BOARD_WIDTH } from './constants';
 
 import Scene from './scene';
 
@@ -21,4 +17,5 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
-console.log({ game });
+
+console.log('### Game', game);

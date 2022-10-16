@@ -16,6 +16,8 @@ import {
   UNIT_SELECTED_TINT
 } from '../../constants';
 
+import { getPositionByTile } from '../../utils';
+
 const Unit = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
   initialize: function Unit(scene) {
@@ -33,6 +35,7 @@ const Unit = new Phaser.Class({
     this.speed = Phaser.Math.GetSpeed(100, 1);
     this.nextTick = 0;
     this.isSelected = false;
+    this.activePath = [];
 
     this.on('pointerdown', function (pointer) {
       if (pointer.event.shiftKey) {
@@ -73,7 +76,9 @@ const Unit = new Phaser.Class({
     }
   },
 
-  move: function (i, j) {
+  move: function (path) {
+    const { x: j, y: i } = path[path.length - 1];
+
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       VALID_UNIT_POSITION;
 
@@ -87,8 +92,10 @@ const Unit = new Phaser.Class({
     this.target.x = GRID_PLACEMENT_X;
 
     if (this.target.y !== this.y || this.target.x !== this.x) {
+      this.activePath = path;
       this.isMoving = true;
     }
+
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
@@ -114,31 +121,7 @@ const Unit = new Phaser.Class({
       && (this.x !== this.target.x || this.y !== this.target.y)
 
     if (isMovingToTarget) {
-      const distance = Phaser.Math.Distance.Between(
-        this.x, this.y,
-        this.target.x, this.target.y
-      )
-
-      const isAtTarget = distance <= UNIT_SNAP_DISTANCE;
-
-      if (isAtTarget) {
-        this.x = this.target.x;
-        this.y = this.target.y;
-        this.isMoving = false;
-      } else {
-        const angle = Phaser.Math.Angle.Between(
-          this.x,        this.y,
-          this.target.x, this.target.y
-        );
-
-        this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG
-
-        const dx = Math.cos(angle);
-        const dy = Math.sin(angle);
-
-        this.x += dx * this.speed * delta;
-        this.y += dy * this.speed * delta;
-      }
+      moveTowardsTarget(this, delta);
     }
   }
 });
@@ -164,6 +147,52 @@ function getEnemy(x, y, distance) {
   }
 
   return false;
+}
+
+function moveTowardsTarget(unit, delta) {
+  const distance = Phaser.Math.Distance.Between(
+    unit.x, unit.y,
+    unit.target.x, unit.target.y
+  )
+
+  const isAtTarget = distance <= UNIT_SNAP_DISTANCE;
+
+  if (isAtTarget) {
+    unit.x = unit.target.x;
+    unit.y = unit.target.y;
+    unit.isMoving = false;
+  } else {
+    const activePathTargetX = getPositionByTile(unit.activePath[0].x)
+    const activePathTargetY = getPositionByTile(unit.activePath[0].y)
+
+    const angle = Phaser.Math.Angle.Between(
+      unit.x,
+      unit.y,
+      activePathTargetX,
+      activePathTargetY
+    );
+
+    unit.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG
+
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+
+    unit.x += dx * unit.speed * delta;
+    unit.y += dy * unit.speed * delta;
+
+    const distance = Phaser.Math.Distance.Between(
+      unit.x,
+      unit.y,
+      activePathTargetX,
+      activePathTargetY
+    )
+
+    const isAtActiveTarget = distance <= UNIT_SNAP_DISTANCE;
+
+    if (isAtActiveTarget) {
+      unit.activePath.shift();
+    }
+  }
 }
 
 export default Unit;

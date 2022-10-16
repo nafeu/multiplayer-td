@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
+import EasyStar from 'easystarjs';
 
 import Unit from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 
-import map from '../map';
+import map, { MAP_GRID } from '../map';
 import entities from '../entities';
 
 import { isDebugMode } from '../utils';
@@ -23,6 +24,7 @@ import {
 class Scene extends Phaser.Scene {
   nextEnemy: number;
   playerHUD: Phaser.GameObjects.Text;
+  finder: EasyStar;
 
   constructor() {
     super('main');
@@ -42,8 +44,16 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
+    this.finder = new EasyStar.js();
+
+    configurePathFindingGrid(this.finder);
+
     disableBrowserRightClickMenu(this);
-    this.input.on('pointerdown', handleClickScene);
+
+    this.input.on(
+      'pointerdown',
+      pointer => handleClickScene(pointer, this.finder)
+    );
 
     map.graphics = this.add.graphics();
 
@@ -86,6 +96,8 @@ class Scene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    this.finder.calculate();
+
     this.playerHUD.setText(
       `Tanks Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
@@ -187,20 +199,41 @@ function disableBrowserRightClickMenu(scene) {
   scene.input.mouse.disableContextMenu();
 }
 
-function handleClickScene(pointer) {
+function handleClickScene(pointer, finder: EasyStar) {
   if (pointer.event.shiftKey) {
     placeUnit(pointer);
   }
   else if (pointer.rightButtonDown()) {
     entities.selectedUnits.forEach(selectedUnit => {
+      const originY = Math.floor(selectedUnit.y / TILE_SIZE);
+      const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+
       const i = Math.floor(pointer.y / TILE_SIZE);
       const j = Math.floor(pointer.x / TILE_SIZE);
 
-      if (map.unitValid[i][j] === VALID_UNIT_POSITION) {
-        selectedUnit.move(i, j)
+      const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
+      if (isValidMove) {
+        finder.findPath(
+          originX,
+          originY,
+          j,
+          i,
+          path => {
+            if (path) {
+              selectedUnit.move(path);
+            } else {
+              console.log({ issue: `Path not found.` })
+            }
+          }
+        );
       }
     })
   }
+}
+
+function configurePathFindingGrid(finder: EasyStar) {
+  finder.setGrid(MAP_GRID);
+  finder.setAcceptableTiles([0]);
 }
 
 export default Scene;

@@ -51,3 +51,6 @@ export const PATH_SEGMENTS = [
     size: 11,
   },
 ];
+
+export const SELECTION_RECTANGLE_COLOR = 0x1d7196;
+export const SELECTION_RECTANGLE_OPACITY = 0.5;

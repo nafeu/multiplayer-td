@@ -19,3 +19,15 @@ export const generateId = (key: string) => {
   ID_MAP[key] = (ID_MAP[key] ?? 0) + 1;
   return `${key}:${ID_MAP[key]}`;
 };
+
+export const getTileByPosition = (x: number, y: number) => {
+  const j = Math.floor(x / TILE_SIZE);
+  const i = Math.floor(y / TILE_SIZE);
+
+  return { i, j }
+}
+
+export const sendUiAlert = (alertInfo: object) => {
+  // TODO: Remove this and utilize a proper UI alert class
+  console.info(alertInfo);
+}

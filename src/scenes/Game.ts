@@ -4,11 +4,16 @@ import EasyStar from 'easystarjs';
 import Unit from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
+import Pointer from '../entities/Pointer';
 
 import map, { MAP_GRID } from '../map';
 import entities from '../entities.ts';
 
-import { isDebugMode } from '../utils';
+import {
+  isDebugMode,
+  sendUiAlert,
+  getTileByPosition
+} from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
@@ -18,12 +23,16 @@ import {
   UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
   VALID_UNIT_POSITION,
+  OCCUPIED_UNIT_POSITION,
   BULLET_DAMAGE,
+  SELECTION_RECTANGLE_COLOR,
+  SELECTION_RECTANGLE_OPACITY
 } from '../constants';
 
 class Game extends Phaser.Scene {
   nextEnemy: number;
   playerHUD: Phaser.GameObjects.Text;
+  pointer: Phaser.GameObjects.GameObject;
   finder: EasyStar;
 
   constructor() {
@@ -50,9 +59,25 @@ class Game extends Phaser.Scene {
 
     disableBrowserRightClickMenu(this);
 
-    this.input.on('pointerdown', (pointer) =>
-      handleClickScene(pointer, this.finder)
+    this.selection = addSelectionRectangle(this);
+
+    this.input.on(
+      Phaser.Input.Events.POINTER_DOWN,
+      this.handlePointerDown,
+      this
     );
+    this.input.on(
+      Phaser.Input.Events.POINTER_MOVE,
+      this.handlePointerMove,
+      this
+    );
+    this.input.on(
+      Phaser.Input.Events.POINTER_UP,
+      this.handlePointerUp,
+      this
+    );
+
+    entities.pointer = new Pointer(this, this.add.graphics());
 
     map.graphics = this.add.graphics();
 
@@ -111,11 +136,12 @@ class Game extends Phaser.Scene {
   update(time, delta) {
     this.finder.calculate();
 
-    this.playerHUD.setText(
-      `Tanks Available: ${
+    this.playerHUD.setText([
+      `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
-      }/${UNIT_SQUAD_SIZE}`
-    );
+      }/${UNIT_SQUAD_SIZE}`,
+      `Units Selected: ${entities.selectedUnits.length}`
+    ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
 
@@ -128,6 +154,102 @@ class Game extends Phaser.Scene {
         enemy.startOnPath();
 
         this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
+      }
+    }
+
+    entities.pointer.update();
+  }
+
+  handlePointerDown(pointer) {
+    const { i, j } = getTileByPosition(pointer.x, pointer.y);
+
+    if (pointer.event.shiftKey) {
+      placeUnit(pointer);
+    }
+
+    else if (pointer.rightButtonDown()) {
+      entities.selectedUnits.forEach((selectedUnit) => {
+        const originY = Math.floor(selectedUnit.y / TILE_SIZE);
+        const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+
+
+        const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
+
+        if (isValidMove) {
+          this.finder.findPath(originX, originY, j, i, (path) => {
+            if (path) {
+              selectedUnit.move(path);
+            } else {
+              sendUiAlert({ invalidCommand: `Path not found.` })
+            }
+          });
+        }
+      });
+    }
+    else {
+      this.selection.x = pointer.x;
+      this.selection.y = pointer.y;
+    }
+  }
+
+  handlePointerMove(pointer) {
+    if (!pointer.isDown) return;
+    if (pointer.rightButtonDown()) return;
+
+    const dx = pointer.x - pointer.prevPosition.x;
+    const dy = pointer.y - pointer.prevPosition.y;
+
+    this.selection.width += dx;
+    this.selection.height += dy;
+  }
+
+  handlePointerUp(pointer) {
+    const isBoxSelection = this.selection.width !== 0
+      || this.selection.height !== 0
+
+    if (isBoxSelection) {
+      const selectionRect = new Phaser.Geom.Rectangle(
+        this.selection.x,
+        this.selection.y,
+        this.selection.width,
+        this.selection.height
+      );
+
+      const isNegativeWidthSelection = selectionRect.width < 0;
+
+      if (isNegativeWidthSelection) {
+        selectionRect.x += selectionRect.width;
+        selectionRect.width *= -1;
+      }
+
+      const isNegativeHeightSelection = selectionRect.height < 0;
+
+      if (isNegativeHeightSelection) {
+        selectionRect.y += selectionRect.height;
+        selectionRect.height *= -1;
+      }
+
+      const selected = entities.unitGroup.getChildren().filter((unit) => {
+        const rect = unit.getBounds();
+
+        return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
+      });
+
+      entities.selectedUnits = selected;
+
+      this.selection.width = 0;
+      this.selection.height = 0;
+    } else {
+      const allUnits = entities.unitGroup.getChildren();
+      const hasNotClickedAnyUnits = !allUnits.find(unit => (
+        unit.getBounds().contains(pointer.x, pointer.y)
+      ));
+
+      const hasClickedOnEmptySpace = hasNotClickedAnyUnits
+        && !pointer.rightButtonReleased()
+
+      if (hasClickedOnEmptySpace) {
+        entities.selectedUnits = [];
       }
     }
   }
@@ -212,34 +334,20 @@ function disableBrowserRightClickMenu(scene) {
   scene.input.mouse.disableContextMenu();
 }
 
-function handleClickScene(pointer, finder: EasyStar) {
-  if (pointer.event.shiftKey) {
-    placeUnit(pointer);
-  } else if (pointer.rightButtonDown()) {
-    entities.selectedUnits.forEach((selectedUnit) => {
-      const originY = Math.floor(selectedUnit.y / TILE_SIZE);
-      const originX = Math.floor(selectedUnit.x / TILE_SIZE);
-
-      const i = Math.floor(pointer.y / TILE_SIZE);
-      const j = Math.floor(pointer.x / TILE_SIZE);
-
-      const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
-      if (isValidMove) {
-        finder.findPath(originX, originY, j, i, (path) => {
-          if (path) {
-            selectedUnit.move(path);
-          } else {
-            console.log({ issue: `Path not found.` });
-          }
-        });
-      }
-    });
-  }
-}
-
 function configurePathFindingGrid(finder: EasyStar) {
   finder.setGrid(MAP_GRID);
-  finder.setAcceptableTiles([0]);
+  finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
+}
+
+function addSelectionRectangle(scene) {
+  return scene.add.rectangle(
+    0,
+    0,
+    0,
+    0,
+    SELECTION_RECTANGLE_COLOR,
+    SELECTION_RECTANGLE_OPACITY
+  );
 }
 
 export default Game;

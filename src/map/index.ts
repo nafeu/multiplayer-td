@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import {
   BOARD_HEIGHT_TILE,
   BOARD_WIDTH_TILE,
-  VALID_TURRET_POSITION,
+  VALID_UNIT_POSITION,
   INVALID_TURRENT_POSITION,
   ORIENTATION_VERTICAL,
   ORIENTATION_HORIZONTAL
@@ -14,10 +14,10 @@ import {
 } from './constants';
 
 export const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
-  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_TURRET_POSITION)
+  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_UNIT_POSITION)
 );
 
-(function removePathTilesForTurret(map, segments) {
+(function removePathTilesForUnit(map, segments) {
   segments.forEach((args) => {
     const { orientation, start, size } = args;
 
@@ -40,7 +40,7 @@ export const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
 const map = {
   path: null as Phaser.Curves.Path | null,
   graphics: null as Phaser.GameObjects.Graphics | null,
-  turretValid: MAP_GRID,
+  unitValid: MAP_GRID,
 };
 
 export default map;

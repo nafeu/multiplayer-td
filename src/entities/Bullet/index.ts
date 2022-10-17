@@ -36,7 +36,10 @@ const Bullet = new Phaser.Class({
     this.lifespan -= delta;
     this.x += this.dx * (this.speed * delta);
     this.y += this.dy * (this.speed * delta);
-    if (this.lifespan <= 0) {
+
+    const shouldDeactivate = this.lifespan <= 0
+
+    if (shouldDeactivate) {
       this.setActive(false);
       this.setVisible(false);
     }

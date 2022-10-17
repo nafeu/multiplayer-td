@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import {
   SPRITE_ATLAS_NAME,
   BULLET_IMG_NAME
-} from '../../constants';
+} from '../constants';
 
 const Bullet = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,

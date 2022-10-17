@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from './constants';
-import { generateId } from './utils';
+import { TILE_SIZE } from '../constants';
+import { generateId } from '../utils';
 
 class HealthBar {
   id: string;

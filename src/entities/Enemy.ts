@@ -1,15 +1,17 @@
 import Phaser from 'phaser';
 
-import map from '../../map';
+import map from '../map'
+
+import HealthBar from './HealthBar';
+
+import { generateId } from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
   ENEMY_IMG_NAME,
   ENEMY_HP,
   ENEMY_SPEED,
-} from '../../constants';
-import HealthBar from '../../HealthBar';
-import { generateId } from '../../utils';
+} from '../constants';
 
 const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,

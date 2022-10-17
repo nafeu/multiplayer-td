@@ -33,3 +33,21 @@ export const OCCUPIED_UNIT_POSITION = 1;
 
 export const ORIENTATION_HORIZONTAL = 'horizontal';
 export const ORIENTATION_VERTICAL = 'vertical';
+
+export const PATH_SEGMENTS = [
+  {
+    orientation: ORIENTATION_VERTICAL,
+    start: { x: 2, y: 0 },
+    size: 6,
+  },
+  {
+    orientation: ORIENTATION_HORIZONTAL,
+    start: { x: 2, y: 5 },
+    size: 13,
+  },
+  {
+    orientation: ORIENTATION_VERTICAL,
+    start: { x: 14, y: 5 },
+    size: 11,
+  },
+];

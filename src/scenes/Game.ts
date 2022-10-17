@@ -6,7 +6,7 @@ import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 
 import map, { MAP_GRID } from '../map';
-import entities from '../entities';
+import entities from '../entities.ts';
 
 import { isDebugMode } from '../utils';
 
@@ -21,7 +21,7 @@ import {
   BULLET_DAMAGE,
 } from '../constants';
 
-class Scene extends Phaser.Scene {
+class Game extends Phaser.Scene {
   nextEnemy: number;
   playerHUD: Phaser.GameObjects.Text;
   finder: EasyStar;
@@ -242,4 +242,4 @@ function configurePathFindingGrid(finder: EasyStar) {
   finder.setAcceptableTiles([0]);
 }
 
-export default Scene;
+export default Game;

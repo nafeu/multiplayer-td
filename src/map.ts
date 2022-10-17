@@ -6,10 +6,7 @@ import {
   VALID_UNIT_POSITION,
   INVALID_TURRENT_POSITION,
   ORIENTATION_VERTICAL,
-  ORIENTATION_HORIZONTAL
-} from '../constants';
-
-import {
+  ORIENTATION_HORIZONTAL,
   PATH_SEGMENTS
 } from './constants';
 

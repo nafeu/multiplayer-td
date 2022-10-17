@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { BOARD_BACKGROUND_COLOR, BOARD_HEIGHT, BOARD_WIDTH } from './constants';
 
-import Scene from './scene';
+import Game from './scenes/Game';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -13,7 +13,7 @@ const config: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
   },
-  scene: Scene,
+  scene: Game,
 };
 
 const game = new Phaser.Game(config);

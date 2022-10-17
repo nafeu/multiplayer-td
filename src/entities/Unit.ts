@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 
-import entities from '../index';
-import map from '../../map';
+import entities from '../entities'
+import map from '../map'
+
+import { generateId, getPositionByTile } from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
@@ -14,9 +16,7 @@ import {
   UNIT_SNAP_DISTANCE,
   UNIT_MOVING_TINT,
   UNIT_SELECTED_TINT,
-} from '../../constants';
-
-import { generateId, getPositionByTile } from '../../utils';
+} from '../constants';
 
 const Unit = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,

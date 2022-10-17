@@ -18,7 +18,7 @@ import {
   UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
   VALID_UNIT_POSITION,
-  BULLET_DAMAGE
+  BULLET_DAMAGE,
 } from '../constants';
 
 class Scene extends Phaser.Scene {
@@ -50,9 +50,8 @@ class Scene extends Phaser.Scene {
 
     disableBrowserRightClickMenu(this);
 
-    this.input.on(
-      'pointerdown',
-      pointer => handleClickScene(pointer, this.finder)
+    this.input.on('pointerdown', (pointer) =>
+      handleClickScene(pointer, this.finder)
     );
 
     map.graphics = this.add.graphics();
@@ -67,11 +66,21 @@ class Scene extends Phaser.Scene {
       classType: Unit,
       runChildUpdate: true,
       maxSize: UNIT_SQUAD_SIZE,
+      // use createCallback to pass the scene for post initialization stuff
+      // createCallback: function (unit: typeof Unit) {
+      //   console.log('### Unit Created', unit.id);
+
+      //   unit.postInitialize(map, getEnemy, () => entities.bullets.get());
+      // },
     });
 
     entities.enemyGroup = this.physics.add.group({
       classType: Enemy,
       runChildUpdate: true,
+      // removeCallback doesn't get triggered for recycled objects - don't rely on this for resets
+      // removeCallback: function (enemy: typeof Enemy) {
+      //   console.log('### Enemy Removed', enemy.id);
+      // },
     });
 
     // value used to control spawn rate of enemies
@@ -93,6 +102,10 @@ class Scene extends Phaser.Scene {
         align: 'right',
       })
       .setOrigin(1, 0);
+
+    // Setup Default Units
+    placeUnit({ x: 70, y: 250 });
+    placeUnit({ x: 100, y: 250 });
   }
 
   update(time, delta) {
@@ -104,7 +117,7 @@ class Scene extends Phaser.Scene {
       }/${UNIT_SQUAD_SIZE}`
     );
 
-    const shouldSpawnEnemy = time > this.nextEnemy
+    const shouldSpawnEnemy = time > this.nextEnemy;
 
     if (shouldSpawnEnemy) {
       const enemy = entities.enemyGroup.get();
@@ -202,9 +215,8 @@ function disableBrowserRightClickMenu(scene) {
 function handleClickScene(pointer, finder: EasyStar) {
   if (pointer.event.shiftKey) {
     placeUnit(pointer);
-  }
-  else if (pointer.rightButtonDown()) {
-    entities.selectedUnits.forEach(selectedUnit => {
+  } else if (pointer.rightButtonDown()) {
+    entities.selectedUnits.forEach((selectedUnit) => {
       const originY = Math.floor(selectedUnit.y / TILE_SIZE);
       const originX = Math.floor(selectedUnit.x / TILE_SIZE);
 
@@ -213,21 +225,15 @@ function handleClickScene(pointer, finder: EasyStar) {
 
       const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
       if (isValidMove) {
-        finder.findPath(
-          originX,
-          originY,
-          j,
-          i,
-          path => {
-            if (path) {
-              selectedUnit.move(path);
-            } else {
-              console.log({ issue: `Path not found.` })
-            }
+        finder.findPath(originX, originY, j, i, (path) => {
+          if (path) {
+            selectedUnit.move(path);
+          } else {
+            console.log({ issue: `Path not found.` });
           }
-        );
+        });
       }
-    })
+    });
   }
 }
 

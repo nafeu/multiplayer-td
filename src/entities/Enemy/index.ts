@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 
-import map from '../../map'
+import map from '../../map';
 
 import {
   SPRITE_ATLAS_NAME,
   ENEMY_IMG_NAME,
   ENEMY_HP,
-  ENEMY_SPEED
+  ENEMY_SPEED,
 } from '../../constants';
+import HealthBar from '../../HealthBar';
+import { generateId } from '../../utils';
 
 const Enemy = new Phaser.Class({
   Extends: Phaser.GameObjects.Image,
@@ -22,8 +24,25 @@ const Enemy = new Phaser.Class({
       ENEMY_IMG_NAME
     );
 
+    this.id = generateId('Enemy');
+
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
+
+    this.healthBar = new HealthBar(scene, -100, -100, ENEMY_HP, ENEMY_HP);
+    this.recycled = 0;
+  },
+
+  _resetValuesForRecycle: function () {
+    this.hp = ENEMY_HP;
+    this.recycled += 1;
+  },
+
+  handleDeadOrRemoved: function () {
+    this.setActive(false);
+    this.setVisible(false);
+    this.healthBar.clear();
+    this._resetValuesForRecycle();
   },
 
   receiveDamage: function (damage) {
@@ -32,8 +51,7 @@ const Enemy = new Phaser.Class({
     const shouldDeactivateEnemy = this.hp <= 0;
 
     if (shouldDeactivateEnemy) {
-      this.setActive(false);
-      this.setVisible(false);
+      this.handleDeadOrRemoved();
     }
   },
 
@@ -59,8 +77,11 @@ const Enemy = new Phaser.Class({
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
     // if we have reached the end of the path, remove the enemy
     if (this.follower.t >= 1) {
-      this.setActive(false);
-      this.setVisible(false);
+      this.handleDeadOrRemoved();
+    } else {
+      this.healthBar.setPosition(this.follower.vec.x, this.follower.vec.y);
+      this.healthBar.setHealth(this.hp);
+      this.healthBar.draw();
     }
   },
 });

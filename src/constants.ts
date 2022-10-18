@@ -54,3 +54,37 @@ export const PATH_SEGMENTS = [
 
 export const SELECTION_RECTANGLE_COLOR = 0x1d7196;
 export const SELECTION_RECTANGLE_OPACITY = 0.5;
+
+export const INDICATOR_VALID_SELECTION_COLOR = 0x27ae60;
+export const INDICATOR_INVALID_SELECTION_COLOR = 0xc0392b;
+export const INDICATOR_OPACITY = 0.75;
+
+export const AVAILABLE_FORMATIONS = {
+  'auto': [
+    { i: 0, j: 0 },
+    { i: 0, j: 1 },
+    { i: 1, j: 0 },
+    { i: 0, j: -1 },
+    { i: -1, j: 0 },
+    { i: 1, j: 1 },
+    { i: 1, j: -1 },
+    { i: -1, j: 1 },
+    { i: -1, j: -1 }
+  ],
+  'horizontal': [
+    { i: 0, j: 0 },
+    { i: 0, j: 1 },
+    { i: 0, j: -1 },
+    { i: 0, j: 2 },
+    { i: 0, j: -2 }
+  ],
+  'vertical': [
+    { i: 0, j: 0 },
+    { i: 1, j: 0 },
+    { i: -1, j: 0 },
+    { i: 2, j: 0 },
+    { i: -2, j: 0 }
+  ]
+}
+
+export const DEFAULT_FORMATION_SHAPE = 'auto';

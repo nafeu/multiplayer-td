@@ -12,7 +12,8 @@ import entities from '../entities.ts';
 import {
   isDebugMode,
   sendUiAlert,
-  getTileByPosition
+  getValidUnitFormation,
+  rotateFormationShape
 } from '../utils';
 
 import {
@@ -77,6 +78,12 @@ class Game extends Phaser.Scene {
       this
     );
 
+    this.input.keyboard.on(
+      Phaser.Input.Keyboard.Events.ANY_KEY_DOWN,
+      this.handleKeyDown,
+      this
+    );
+
     entities.pointer = new Pointer(this, this.add.graphics());
 
     map.graphics = this.add.graphics();
@@ -134,13 +141,12 @@ class Game extends Phaser.Scene {
   }
 
   update(time, delta) {
-    this.finder.calculate();
-
     this.playerHUD.setText([
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${entities.selectedUnits.length}`
+      `Units Selected: ${entities.selectedUnits.length}`,
+      `Formation: ${entities.interaction.formationShape}`,
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
@@ -161,32 +167,42 @@ class Game extends Phaser.Scene {
   }
 
   handlePointerDown(pointer) {
-    const { i, j } = getTileByPosition(pointer.x, pointer.y);
-
     if (pointer.event.shiftKey) {
       placeUnit(pointer);
+      return;
     }
 
-    else if (pointer.rightButtonDown()) {
-      entities.selectedUnits.forEach((selectedUnit) => {
-        const originY = Math.floor(selectedUnit.y / TILE_SIZE);
-        const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+    if (pointer.rightButtonDown()) {
+      const validUnitFormation = getValidUnitFormation(
+        pointer.x,
+        pointer.y,
+        entities.selectedUnits
+      );
 
+      const selectedUnitCount = entities.selectedUnits.length;
+      const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-        const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
+      if (hasSpaceForUnits) {
+        this.finder.setGrid(map.unitValid);
 
-        if (isValidMove) {
-          this.finder.findPath(originX, originY, j, i, (path) => {
+        entities.selectedUnits.forEach((selectedUnit, index) => {
+          const originY = Math.floor(selectedUnit.y / TILE_SIZE);
+          const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+
+          const validMove = validUnitFormation[index];
+
+          this.finder.findPath(originX, originY, validMove.j, validMove.i, (path) => {
             if (path) {
               selectedUnit.move(path);
             } else {
               sendUiAlert({ invalidCommand: `Path not found.` })
             }
           });
-        }
-      });
-    }
-    else {
+
+          this.finder.calculate();
+        });
+      }
+    } else {
       this.selection.x = pointer.x;
       this.selection.y = pointer.y;
     }
@@ -251,6 +267,12 @@ class Game extends Phaser.Scene {
       if (hasClickedOnEmptySpace) {
         entities.selectedUnits = [];
       }
+    }
+  }
+
+  handleKeyDown(event) {
+    if (event.key === 'a') {
+      rotateFormationShape();
     }
   }
 }
@@ -335,8 +357,10 @@ function disableBrowserRightClickMenu(scene) {
 }
 
 function configurePathFindingGrid(finder: EasyStar) {
-  finder.setGrid(MAP_GRID);
-  finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
+  finder.setGrid(map.unitValid);
+  finder.setAcceptableTiles(
+    [VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]
+  );
 }
 
 function addSelectionRectangle(scene) {

@@ -5,6 +5,7 @@ const entities = {
   bullets: null as Phaser.GameObjects.Group | null,
   enemyGroup: null as Phaser.GameObjects.Group | null,
   unitGroup: null as Phaser.GameObjects.Group | null,
+  pointer: null as Phaser.GameObjects.GameObject | null,
   selectedUnits: []
 };
 

@@ -1,14 +1,5 @@
 import Phaser, { Scene } from 'phaser';
 
-import entities from '../entities';
-import map, { MapPath } from '../map';
-
-import {
-  generateId,
-  getPositionByTile,
-  getTileCoordinatesByPosition,
-} from '../utils';
-
 import {
   SPRITE_ATLAS_NAME,
   TANK_IMG_NAME,
@@ -20,37 +11,52 @@ import {
   UNIT_SNAP_DISTANCE,
   UNIT_MOVING_TINT,
   UNIT_SELECTED_TILE_BORDER,
+  UNIT_PREPARING_TINT,
 } from '../constants';
-import Enemy from './Enemy';
+import entities from '../entities';
+import map, { MapPath } from '../map';
+import {
+  generateId,
+  getPositionByTile,
+  getTileCoordinatesByPosition,
+} from '../utils';
 import Bullet from './Bullet';
+import Enemy from './Enemy';
 import { TileHighlight } from './TileHighlight';
+import { ACTIONS, STATES, boundStateMachine } from './UnitStateMachine';
 
 export class Unit extends Phaser.GameObjects.Image {
   id: string;
 
-  isMoving: boolean;
   target: Phaser.Math.Vector2;
   speed: number;
   nextTick: number;
   isSelected: boolean;
   activePath: MapPath | null;
+  _queuedPath: MapPath | null;
+  _machine: ReturnType<typeof boundStateMachine>;
 
   highlight: TileHighlight;
 
   tilePositionRow: number;
   tilePositionCol: number;
 
+  STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
+
   constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME);
 
     this.id = generateId('Unit');
 
-    this.isMoving = false;
     this.target = new Phaser.Math.Vector2();
     this.speed = Phaser.Math.GetSpeed(100, 1);
     this.nextTick = 0;
     this.isSelected = false;
+    this._queuedPath = [];
     this.activePath = [];
+
+    this._machine = boundStateMachine(this);
+    this._machine.start();
 
     this.highlight = new TileHighlight(scene, 2, UNIT_SELECTED_TILE_BORDER);
 
@@ -59,6 +65,11 @@ export class Unit extends Phaser.GameObjects.Image {
       this.handlePointerDown,
       this
     );
+  }
+
+  destroy(fromScene?: boolean): void {
+    this._machine.stop();
+    super.destroy(fromScene);
   }
 
   place(i: number, j: number) {
@@ -87,8 +98,14 @@ export class Unit extends Phaser.GameObjects.Image {
     }
   }
 
-  move(path: MapPath) {
-    const { x: tilePositionCol, y: tilePositionRow } = path[path.length - 1];
+  queueMove(path: MapPath) {
+    this._queuedPath = path;
+    this._machine.send({ type: ACTIONS.MOVE_TO, path });
+  }
+
+  move() {
+    const path = this._queuedPath;
+    const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       VALID_UNIT_POSITION;
@@ -104,16 +121,34 @@ export class Unit extends Phaser.GameObjects.Image {
 
     if (this.target.y !== this.y || this.target.x !== this.x) {
       this.activePath = path;
-      this.isMoving = true;
+      this._queuedPath = [];
     }
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
 
+  isMoving() {
+    return this._machine.getSnapshot().matches(this.STATES.MOVING);
+  }
+
+  isSeiged() {
+    return this._machine.getSnapshot().matches(this.STATES.SEIGED);
+  }
+
+  isPreparing() {
+    const snapshot = this._machine.getSnapshot();
+    return (
+      snapshot.matches(this.STATES.PREPARING_TO_MOVE) ||
+      snapshot.matches(this.STATES.PREPARING_TO_SEIGE)
+    );
+  }
+
   update(time: number, delta: number) {
-    if (this.isMoving) {
+    if (this.isMoving()) {
       this.setTint(UNIT_MOVING_TINT);
+    } else if (this.isPreparing()) {
+      this.setTint(UNIT_PREPARING_TINT);
     } else {
       this.clearTint();
     }
@@ -125,18 +160,22 @@ export class Unit extends Phaser.GameObjects.Image {
       this.highlight.clear();
     }
 
-    const shouldShoot = time > this.nextTick;
+    if (this.isPreparing()) {
+      return;
+    } else if (this.isSeiged()) {
+      const shouldShoot = time > this.nextTick;
 
-    if (shouldShoot) {
-      this.fire();
-      this.nextTick = time + UNIT_FIRE_RATE_MS;
-    }
+      if (shouldShoot) {
+        this.fire();
+        this.nextTick = time + UNIT_FIRE_RATE_MS;
+      }
+    } else if (this.isMoving()) {
+      const isMovingToTarget =
+        this.x !== this.target.x || this.y !== this.target.y;
 
-    const isMovingToTarget =
-      this.isMoving && (this.x !== this.target.x || this.y !== this.target.y);
-
-    if (isMovingToTarget) {
-      moveTowardsTarget(this, delta);
+      if (isMovingToTarget) {
+        moveTowardsTarget(this, delta);
+      }
     }
   }
 
@@ -199,8 +238,11 @@ function moveTowardsTarget(unit: Unit, delta: number) {
   if (isAtTarget) {
     unit.x = unit.target.x;
     unit.y = unit.target.y;
-    unit.isMoving = false;
+    unit._machine.send({ type: ACTIONS.STOP });
+
+    return;
   } else {
+    if (!unit.activePath.length) console.error('### FAILURE', unit.activePath);
     const activePathTargetX = getPositionByTile(unit.activePath[0].x);
     const activePathTargetY = getPositionByTile(unit.activePath[0].y);
 
@@ -229,6 +271,7 @@ function moveTowardsTarget(unit: Unit, delta: number) {
     const isAtActiveTarget = distance <= UNIT_SNAP_DISTANCE;
 
     if (isAtActiveTarget) {
+      // Pops first element from array, essentially marking point as consumed
       unit.activePath.shift();
     }
   }

@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "easystarjs": "^0.4.4",
-    "phaser": "^3.55.2"
+    "phaser": "^3.55.2",
+    "xstate": "^4.33.6"
   },
   "scripts": {
     "start": "bun dev",

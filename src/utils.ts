@@ -1,4 +1,9 @@
-import { TILE_SIZE, VALID_UNIT_POSITION, AVAILABLE_FORMATIONS } from './constants';
+import {
+  TILE_SIZE,
+  VALID_UNIT_POSITION,
+  AVAILABLE_FORMATIONS,
+  OCCUPIED_UNIT_POSITION
+} from './constants';
 import map from './map';
 import entities from './entities.ts';
 
@@ -95,4 +100,11 @@ export const rotateFormationShape = () => {
   } else {
     entities.interaction.formationShape = 'auto';
   }
+}
+
+export const isTileFreeAtPosition = (x: number, y: number) => {
+  const { i: row, j: col } = getTileByPosition(x, y);
+
+  return map
+    .unitValid[row][col] !== OCCUPIED_UNIT_POSITION;
 }

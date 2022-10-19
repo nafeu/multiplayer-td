@@ -4,12 +4,13 @@ import {
   TILE_SIZE,
   INDICATOR_VALID_SELECTION_COLOR,
   INDICATOR_INVALID_SELECTION_COLOR,
-  INDICATOR_OPACITY
+  INDICATOR_OPACITY,
 } from '../constants';
 
 import {
   getTileByPosition,
   getValidUnitFormation,
+  isTileFreeAtPosition,
   isDebugMode
 } from '../utils';
 
@@ -25,6 +26,9 @@ const Pointer = new Phaser.Class({
       this.handlePointerMove,
       this
     );
+
+    this.x = 0;
+    this.y = 0;
   },
 
   update: function () {
@@ -33,8 +37,9 @@ const Pointer = new Phaser.Class({
     this.indicator.clear();
 
     const selectedUnitCount = entities.selectedUnits.length
+    const hasSelectedUnits = selectedUnitCount > 0
 
-    if (selectedUnitCount > 0) {
+    if (hasSelectedUnits) {
       const validUnitFormation = getValidUnitFormation(
         this.x,
         this.y,
@@ -43,7 +48,7 @@ const Pointer = new Phaser.Class({
 
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount
 
-      if (hasSpaceForUnits) {
+      if (hasSpaceForUnits && isTileFreeAtPosition(this.x, this.y)) {
         this.indicator.fillStyle(
           INDICATOR_VALID_SELECTION_COLOR,
           INDICATOR_OPACITY

@@ -13,7 +13,8 @@ import {
   isDebugMode,
   sendUiAlert,
   getValidUnitFormation,
-  rotateFormationShape
+  rotateFormationShape,
+  isTileFreeAtPosition
 } from '../utils';
 
 import {
@@ -23,11 +24,13 @@ import {
   TILE_SIZE,
   UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
+  ENEMY_PATH_COLOR,
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   BULLET_DAMAGE,
   SELECTION_RECTANGLE_COLOR,
-  SELECTION_RECTANGLE_OPACITY
+  SELECTION_RECTANGLE_OPACITY,
+  GRID_LINE_COLOR
 } from '../constants';
 
 class Game extends Phaser.Scene {
@@ -167,7 +170,7 @@ class Game extends Phaser.Scene {
   }
 
   handlePointerDown(pointer) {
-    if (pointer.event.shiftKey) {
+    if (pointer.event.ctrlKey) {
       placeUnit(pointer);
       return;
     }
@@ -182,7 +185,7 @@ class Game extends Phaser.Scene {
       const selectedUnitCount = entities.selectedUnits.length;
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-      if (hasSpaceForUnits) {
+      if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y)) {
         this.finder.setGrid(map.unitValid);
 
         entities.selectedUnits.forEach((selectedUnit, index) => {
@@ -280,7 +283,7 @@ class Game extends Phaser.Scene {
 function drawGrid(graphics: Phaser.GameObjects.Graphics) {
   const lineWidth = 2;
   const halfWidth = Math.floor(lineWidth / 2);
-  graphics.lineStyle(2, 0x0000ff, 0.5);
+  graphics.lineStyle(2, GRID_LINE_COLOR, 0.5);
 
   for (let i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
     graphics.moveTo(0, i * TILE_SIZE - halfWidth);
@@ -317,7 +320,7 @@ function drawEnemyPath(
   );
   path.lineTo(15 * TILE_SIZE - HALF_TILE - lineOffset, BOARD_HEIGHT);
 
-  graphics.lineStyle(lineWidth, 0xffffff, 1);
+  graphics.lineStyle(lineWidth, ENEMY_PATH_COLOR, 1);
 
   path.draw(graphics);
 

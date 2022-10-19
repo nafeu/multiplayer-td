@@ -16,6 +16,7 @@ export const BULLET_DAMAGE = 50;
 export const ENEMY_HP = 1000;
 export const ENEMY_SPAWN_RATE_MS = 1000;
 export const ENEMY_SPEED = 1 / 10000;
+export const ENEMY_PATH_COLOR = 0xecf0f1;
 
 export const UNIT_FIRE_RANGE = 100;
 export const UNIT_FIRE_RATE_MS = 100;
@@ -88,3 +89,5 @@ export const AVAILABLE_FORMATIONS = {
 }
 
 export const DEFAULT_FORMATION_SHAPE = 'auto';
+
+export const GRID_LINE_COLOR = 0x34495e;

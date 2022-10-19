@@ -40,15 +40,25 @@ const Unit = new Phaser.Class({
     this.activePath = [];
 
     this.on('pointerdown', function (pointer) {
-      if (pointer.event.shiftKey) {
+      if (pointer.event.ctrlKey) {
         this.destroy();
         map.unitValid[this.tilePositionRow][this.tilePositionCol] =
           VALID_UNIT_POSITION;
         return;
       }
 
-      entities.selectedUnits = [];
-      entities.selectedUnits.push(this);
+      if (pointer.event.shiftKey) {
+        const unitIsNotSelected = entities.selectedUnits.find(
+          unit => unit.id === this.id
+        ) === undefined;
+
+        if (unitIsNotSelected) {
+          entities.selectedUnits.push(this);
+        }
+      } else {
+        entities.selectedUnits = [];
+        entities.selectedUnits.push(this);
+      }
     });
   },
 
@@ -79,16 +89,16 @@ const Unit = new Phaser.Class({
   },
 
   move: function (path) {
-    const { x: j, y: i } = path[path.length - 1];
+    const { x: tilePositionCol, y: tilePositionRow } = path[path.length - 1];
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       VALID_UNIT_POSITION;
 
-    this.tilePositionRow = i;
-    this.tilePositionCol = j;
+    this.tilePositionRow = tilePositionRow;
+    this.tilePositionCol = tilePositionCol;
 
-    const GRID_PLACEMENT_Y = i * TILE_SIZE + TILE_SIZE / 2;
-    const GRID_PLACEMENT_X = j * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_Y = tilePositionRow * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_X = tilePositionCol * TILE_SIZE + TILE_SIZE / 2;
 
     this.target.y = GRID_PLACEMENT_Y;
     this.target.x = GRID_PLACEMENT_X;

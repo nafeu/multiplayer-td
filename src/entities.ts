@@ -1,3 +1,5 @@
+import { DEFAULT_FORMATION_SHAPE } from './constants';
+
 const entities = {
   player: {
     1: null,
@@ -6,7 +8,10 @@ const entities = {
   enemyGroup: null as Phaser.GameObjects.Group | null,
   unitGroup: null as Phaser.GameObjects.Group | null,
   pointer: null as Phaser.GameObjects.GameObject | null,
-  selectedUnits: []
+  selectedUnits: [],
+  interaction: {
+    formationShape: DEFAULT_FORMATION_SHAPE
+  }
 };
 
 export default entities;

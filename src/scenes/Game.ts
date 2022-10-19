@@ -12,7 +12,9 @@ import entities from '../entities.ts';
 import {
   isDebugMode,
   sendUiAlert,
-  getTileByPosition
+  getValidUnitFormation,
+  rotateFormationShape,
+  isTileFreeAtPosition
 } from '../utils';
 
 import {
@@ -22,11 +24,13 @@ import {
   TILE_SIZE,
   UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
+  ENEMY_PATH_COLOR,
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   BULLET_DAMAGE,
   SELECTION_RECTANGLE_COLOR,
-  SELECTION_RECTANGLE_OPACITY
+  SELECTION_RECTANGLE_OPACITY,
+  GRID_LINE_COLOR
 } from '../constants';
 
 class Game extends Phaser.Scene {
@@ -74,6 +78,12 @@ class Game extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       this.handlePointerUp,
+      this
+    );
+
+    this.input.keyboard.on(
+      Phaser.Input.Keyboard.Events.ANY_KEY_DOWN,
+      this.handleKeyDown,
       this
     );
 
@@ -134,13 +144,12 @@ class Game extends Phaser.Scene {
   }
 
   update(time, delta) {
-    this.finder.calculate();
-
     this.playerHUD.setText([
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${entities.selectedUnits.length}`
+      `Units Selected: ${entities.selectedUnits.length}`,
+      `Formation: ${entities.interaction.formationShape}`,
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
@@ -161,32 +170,42 @@ class Game extends Phaser.Scene {
   }
 
   handlePointerDown(pointer) {
-    const { i, j } = getTileByPosition(pointer.x, pointer.y);
-
-    if (pointer.event.shiftKey) {
+    if (pointer.event.ctrlKey) {
       placeUnit(pointer);
+      return;
     }
 
-    else if (pointer.rightButtonDown()) {
-      entities.selectedUnits.forEach((selectedUnit) => {
-        const originY = Math.floor(selectedUnit.y / TILE_SIZE);
-        const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+    if (pointer.rightButtonDown()) {
+      const validUnitFormation = getValidUnitFormation(
+        pointer.x,
+        pointer.y,
+        entities.selectedUnits
+      );
 
+      const selectedUnitCount = entities.selectedUnits.length;
+      const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-        const isValidMove = map.unitValid[i][j] === VALID_UNIT_POSITION;
+      if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y)) {
+        this.finder.setGrid(map.unitValid);
 
-        if (isValidMove) {
-          this.finder.findPath(originX, originY, j, i, (path) => {
+        entities.selectedUnits.forEach((selectedUnit, index) => {
+          const originY = Math.floor(selectedUnit.y / TILE_SIZE);
+          const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+
+          const validMove = validUnitFormation[index];
+
+          this.finder.findPath(originX, originY, validMove.j, validMove.i, (path) => {
             if (path) {
               selectedUnit.move(path);
             } else {
               sendUiAlert({ invalidCommand: `Path not found.` })
             }
           });
-        }
-      });
-    }
-    else {
+
+          this.finder.calculate();
+        });
+      }
+    } else {
       this.selection.x = pointer.x;
       this.selection.y = pointer.y;
     }
@@ -253,12 +272,18 @@ class Game extends Phaser.Scene {
       }
     }
   }
+
+  handleKeyDown(event) {
+    if (event.key === 'a') {
+      rotateFormationShape();
+    }
+  }
 }
 
 function drawGrid(graphics: Phaser.GameObjects.Graphics) {
   const lineWidth = 2;
   const halfWidth = Math.floor(lineWidth / 2);
-  graphics.lineStyle(2, 0x0000ff, 0.5);
+  graphics.lineStyle(2, GRID_LINE_COLOR, 0.5);
 
   for (let i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
     graphics.moveTo(0, i * TILE_SIZE - halfWidth);
@@ -295,7 +320,7 @@ function drawEnemyPath(
   );
   path.lineTo(15 * TILE_SIZE - HALF_TILE - lineOffset, BOARD_HEIGHT);
 
-  graphics.lineStyle(lineWidth, 0xffffff, 1);
+  graphics.lineStyle(lineWidth, ENEMY_PATH_COLOR, 1);
 
   path.draw(graphics);
 
@@ -335,8 +360,10 @@ function disableBrowserRightClickMenu(scene) {
 }
 
 function configurePathFindingGrid(finder: EasyStar) {
-  finder.setGrid(MAP_GRID);
-  finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
+  finder.setGrid(map.unitValid);
+  finder.setAcceptableTiles(
+    [VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]
+  );
 }
 
 function addSelectionRectangle(scene) {

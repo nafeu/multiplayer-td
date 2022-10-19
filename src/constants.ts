@@ -16,6 +16,7 @@ export const BULLET_DAMAGE = 50;
 export const ENEMY_HP = 1000;
 export const ENEMY_SPAWN_RATE_MS = 1000;
 export const ENEMY_SPEED = 1 / 10000;
+export const ENEMY_PATH_COLOR = 0xecf0f1;
 
 export const UNIT_FIRE_RANGE = 100;
 export const UNIT_FIRE_RATE_MS = 100;
@@ -54,3 +55,39 @@ export const PATH_SEGMENTS = [
 
 export const SELECTION_RECTANGLE_COLOR = 0x1d7196;
 export const SELECTION_RECTANGLE_OPACITY = 0.5;
+
+export const INDICATOR_VALID_SELECTION_COLOR = 0x27ae60;
+export const INDICATOR_INVALID_SELECTION_COLOR = 0xc0392b;
+export const INDICATOR_OPACITY = 0.75;
+
+export const AVAILABLE_FORMATIONS = {
+  'auto': [
+    { i: 0, j: 0 },
+    { i: 0, j: 1 },
+    { i: 1, j: 0 },
+    { i: 0, j: -1 },
+    { i: -1, j: 0 },
+    { i: 1, j: 1 },
+    { i: 1, j: -1 },
+    { i: -1, j: 1 },
+    { i: -1, j: -1 }
+  ],
+  'horizontal': [
+    { i: 0, j: 0 },
+    { i: 0, j: 1 },
+    { i: 0, j: -1 },
+    { i: 0, j: 2 },
+    { i: 0, j: -2 }
+  ],
+  'vertical': [
+    { i: 0, j: 0 },
+    { i: 1, j: 0 },
+    { i: -1, j: 0 },
+    { i: 2, j: 0 },
+    { i: -2, j: 0 }
+  ]
+}
+
+export const DEFAULT_FORMATION_SHAPE = 'auto';
+
+export const GRID_LINE_COLOR = 0x34495e;

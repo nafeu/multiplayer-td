@@ -1,4 +1,4 @@
-import Phaser, { Scene } from 'phaser';
+import Phaser from 'phaser';
 import EasyStar from 'easystarjs';
 
 import Unit from '../entities/Unit';
@@ -99,7 +99,7 @@ class Game extends Phaser.Scene {
       runChildUpdate: true,
       maxSize: UNIT_SQUAD_SIZE,
       // use createCallback to pass the scene for post initialization stuff
-      createCallback: function (unit: typeof Unit) {
+      createCallback: function (unit: Unit) {
         console.log('### Unit Created', unit.id, unit);
 
         // unit.postInitialize(map, getEnemy, () => entities.bullets.get());
@@ -123,10 +123,18 @@ class Game extends Phaser.Scene {
       runChildUpdate: true,
     });
 
+    // this is a type helper
+    // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
+    // and doesn't technically guarantee ordering of the objects being compared
+    // so this wrapper is taking responsibility of this assumption
+    function wrappedDamageEnemy(enemy, bullet) {
+      return damageEnemy(enemy as Enemy, bullet as typeof Bullet);
+    }
+
     this.physics.add.overlap(
       entities.enemyGroup,
       entities.bullets,
-      damageEnemy
+      wrappedDamageEnemy
     );
 
     this.playerHUD = this.add
@@ -152,7 +160,7 @@ class Game extends Phaser.Scene {
     const shouldSpawnEnemy = time > this.nextEnemy;
 
     if (shouldSpawnEnemy) {
-      const enemy = entities.enemyGroup.get();
+      const enemy = entities.enemyGroup.get() as Enemy | null;
 
       if (enemy) {
         enemy.setActive(true);
@@ -348,7 +356,7 @@ function placeUnit(pointer) {
   }
 }
 
-function damageEnemy(enemy, bullet) {
+function damageEnemy(enemy: Enemy, bullet: typeof Bullet) {
   const ifEnemyAndBulletAlive = enemy.active && bullet.active;
 
   if (ifEnemyAndBulletAlive) {
@@ -359,7 +367,7 @@ function damageEnemy(enemy, bullet) {
   }
 }
 
-function disableBrowserRightClickMenu(scene) {
+function disableBrowserRightClickMenu(scene: Phaser.Scene) {
   scene.input.mouse.disableContextMenu();
 }
 
@@ -368,7 +376,7 @@ function configurePathFindingGrid(finder: EasyStar.js) {
   finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
 }
 
-function addSelectionRectangle(scene: Scene) {
+function addSelectionRectangle(scene: Phaser.Scene) {
   return scene.add.rectangle(
     0,
     0,

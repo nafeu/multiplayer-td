@@ -151,7 +151,7 @@ function addBullet(x, y, angle) {
 }
 
 function getEnemy(x, y, distance) {
-  const enemyUnits = entities.enemyGroup.getChildren() as Array<typeof Enemy>;
+  const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 
   for (let i = 0; i < enemyUnits.length; i++) {
     if (

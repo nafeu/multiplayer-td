@@ -6,7 +6,7 @@ import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 import Pointer from '../entities/Pointer';
 
-import map, { MAP_GRID } from '../map';
+import map from '../map';
 import entities from '../entities.ts';
 
 import {
@@ -143,7 +143,7 @@ class Game extends Phaser.Scene {
     placeUnit({ x: 100, y: 250 });
   }
 
-  update(time, delta) {
+  update(time) {
     this.playerHUD.setText([
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()

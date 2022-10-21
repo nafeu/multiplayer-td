@@ -128,7 +128,7 @@ class Game extends Phaser.Scene {
     // and doesn't technically guarantee ordering of the objects being compared
     // so this wrapper is taking responsibility of this assumption
     function wrappedDamageEnemy(enemy, bullet) {
-      return damageEnemy(enemy as Enemy, bullet as typeof Bullet);
+      return damageEnemy(enemy as Enemy, bullet as Bullet);
     }
 
     this.physics.add.overlap(
@@ -356,7 +356,7 @@ function placeUnit(pointer) {
   }
 }
 
-function damageEnemy(enemy: Enemy, bullet: typeof Bullet) {
+function damageEnemy(enemy: Enemy, bullet: Bullet) {
   const ifEnemyAndBulletAlive = enemy.active && bullet.active;
 
   if (ifEnemyAndBulletAlive) {

@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import Phaser, { Scene } from 'phaser';
 
 import entities from '../entities';
 import map, { MapPath } from '../map';
@@ -18,6 +18,7 @@ import {
   UNIT_SELECTED_TINT,
 } from '../constants';
 import Enemy from './Enemy';
+import Bullet from './Bullet';
 
 class Unit extends Phaser.GameObjects.Image {
   id: string;
@@ -32,7 +33,7 @@ class Unit extends Phaser.GameObjects.Image {
   tilePositionRow: number;
   tilePositionCol: number;
 
-  constructor(scene) {
+  constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME);
 
     this.id = generateId('Unit');
@@ -67,7 +68,7 @@ class Unit extends Phaser.GameObjects.Image {
     });
   }
 
-  place(i, j) {
+  place(i: number, j: number) {
     this.tilePositionRow = i;
     this.tilePositionCol = j;
 
@@ -142,15 +143,15 @@ class Unit extends Phaser.GameObjects.Image {
   }
 }
 
-function addBullet(x, y, angle) {
-  const bullet = entities.bullets.get();
+function addBullet(x: number, y: number, angle: number) {
+  const bullet = entities.bullets.get() as Bullet | null;
 
   if (bullet) {
     bullet.fire(x, y, angle);
   }
 }
 
-function getEnemy(x, y, distance) {
+function getEnemy(x: number, y: number, distance: number) {
   const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 
   for (let i = 0; i < enemyUnits.length; i++) {
@@ -165,7 +166,7 @@ function getEnemy(x, y, distance) {
   return false;
 }
 
-function moveTowardsTarget(unit, delta) {
+function moveTowardsTarget(unit: Unit, delta: number) {
   const distance = Phaser.Math.Distance.Between(
     unit.x,
     unit.y,

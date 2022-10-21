@@ -7,11 +7,11 @@ import {
   INVALID_TURRENT_POSITION,
   ORIENTATION_VERTICAL,
   ORIENTATION_HORIZONTAL,
-  PATH_SEGMENTS
+  PATH_SEGMENTS,
 } from './constants';
 
 export const MAP_GRID = Array.from({ length: BOARD_HEIGHT_TILE }).map(() =>
-  Array.from({ length: BOARD_WIDTH_TILE }).fill(VALID_UNIT_POSITION)
+  Array.from<number>({ length: BOARD_WIDTH_TILE }).fill(VALID_UNIT_POSITION)
 );
 
 (function removePathTilesForUnit(map, segments) {
@@ -39,5 +39,8 @@ const map = {
   graphics: null as Phaser.GameObjects.Graphics | null,
   unitValid: MAP_GRID,
 };
+
+// should be "NonNegativeInteger" but that doesn't exist
+export type MapPath = Array<{ x: number; y: number }>;
 
 export default map;

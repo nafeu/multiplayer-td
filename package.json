@@ -15,7 +15,7 @@
     "phaser": "^3.55.2"
   }, "scripts": {
     "start": "bun dev",
-    "typecheck": "tsc --noemit",
+    "typecheck": "tsc --noemit --skipLibCheck",
     "lint": "./node_modules/.bin/eslint ."
   }
 }

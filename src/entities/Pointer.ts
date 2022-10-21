@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import Phaser, { Scene } from 'phaser';
 
 import {
   TILE_SIZE,
@@ -11,15 +11,19 @@ import {
   getTileByPosition,
   getValidUnitFormation,
   isTileFreeAtPosition,
-  isDebugMode
+  isDebugMode,
 } from '../utils';
 
-import entities from '../entities.ts'
+import entities from '../entities';
 
-const Pointer = new Phaser.Class({
-  Extends: Phaser.GameObjects.GameObject,
+class Pointer extends Phaser.GameObjects.GameObject {
+  indicator: Phaser.GameObjects.Graphics;
+  x: number;
+  y: number;
 
-  initialize: function Pointer(scene, graphics) {
+  constructor(scene: Scene, graphics: Phaser.GameObjects.Graphics) {
+    super(scene, 'Pointer');
+
     this.indicator = graphics;
     scene.input.on(
       Phaser.Input.Events.POINTER_MOVE,
@@ -29,24 +33,24 @@ const Pointer = new Phaser.Class({
 
     this.x = 0;
     this.y = 0;
-  },
+  }
 
-  update: function () {
+  update() {
     if (!isDebugMode) return;
 
     this.indicator.clear();
 
-    const selectedUnitCount = entities.selectedUnits.length
-    const hasSelectedUnits = selectedUnitCount > 0
+    const selectedUnitCount = entities.selectedUnits.length;
+    const hasSelectedUnits = selectedUnitCount > 0;
 
     if (hasSelectedUnits) {
       const validUnitFormation = getValidUnitFormation(
         this.x,
         this.y,
         entities.selectedUnits
-      )
+      );
 
-      const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount
+      const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
       if (hasSpaceForUnits && isTileFreeAtPosition(this.x, this.y)) {
         this.indicator.fillStyle(
@@ -61,28 +65,23 @@ const Pointer = new Phaser.Class({
             TILE_SIZE,
             TILE_SIZE
           );
-        })
+        });
       } else {
         this.indicator.fillStyle(
           INDICATOR_INVALID_SELECTION_COLOR,
           INDICATOR_OPACITY
         );
-        this.indicator.fillRect(
-          this.x,
-          this.y,
-          TILE_SIZE,
-          TILE_SIZE
-        );
+        this.indicator.fillRect(this.x, this.y, TILE_SIZE, TILE_SIZE);
       }
     }
-  },
+  }
 
-  handlePointerMove: function(pointer) {
+  handlePointerMove(pointer: Phaser.Input.Pointer) {
     const { i: y, j: x } = getTileByPosition(pointer.x, pointer.y);
 
     this.x = x * TILE_SIZE;
     this.y = y * TILE_SIZE;
   }
-});
+}
 
 export default Pointer;

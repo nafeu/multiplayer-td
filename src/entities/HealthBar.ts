@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import Phaser, { Scene } from 'phaser';
 import { TILE_SIZE } from '../constants';
 import { generateId } from '../utils';
 
@@ -14,7 +14,14 @@ class HealthBar {
 
   width: number;
 
-  constructor(scene, x, y, currentValue, totalValue, width = TILE_SIZE) {
+  constructor(
+    scene: Scene,
+    x: number,
+    y: number,
+    currentValue: number,
+    totalValue: number,
+    width = TILE_SIZE
+  ) {
     this.id = generateId('HealthBar');
 
     this.bar = new Phaser.GameObjects.Graphics(scene);
@@ -30,11 +37,11 @@ class HealthBar {
     scene.add.existing(this.bar);
   }
 
-  setHealth(currentValue) {
+  setHealth(currentValue: number) {
     this.currentValue = currentValue;
   }
 
-  setPosition(xPos, yPos) {
+  setPosition(xPos: number, yPos: number) {
     this.xPos = xPos;
     this.yPos = yPos;
   }

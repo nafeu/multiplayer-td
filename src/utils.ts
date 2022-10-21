@@ -2,19 +2,18 @@ import {
   TILE_SIZE,
   VALID_UNIT_POSITION,
   AVAILABLE_FORMATIONS,
-  OCCUPIED_UNIT_POSITION
+  OCCUPIED_UNIT_POSITION,
 } from './constants';
 import map from './map';
-import entities from './entities.ts';
+import entities from './entities';
+import Unit from './entities/Unit';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const noop = () => {};
 
 export const clone = (b) => JSON.parse(JSON.stringify(b));
 
-export const isDebugMode = !(
-  window.location.href.indexOf('preview=true') != -1
-);
+export const isDebugMode = !window.location.search.includes('preview=true');
 
 export const getPositionByTile = (coordinate: number) => {
   return coordinate * TILE_SIZE + TILE_SIZE / 2;
@@ -31,29 +30,29 @@ export const getTileByPosition = (x: number, y: number) => {
   const j = Math.floor(x / TILE_SIZE);
   const i = Math.floor(y / TILE_SIZE);
 
-  return { i, j }
-}
+  return { i, j };
+};
 
-export const sendUiAlert = (alertInfo: object) => {
+export const sendUiAlert = (alertInfo: any) => {
   // TODO: Remove this and utilize a proper UI alert class
   console.info(alertInfo);
-}
+};
 
 export const getValidUnitFormation = (
   x: number,
   y: number,
-  units: array
+  units: Array<Unit>
 ) => {
   const { i, j } = getTileByPosition(x, y);
 
-  const spots = AVAILABLE_FORMATIONS[
-    entities.interaction.formationShape
-  ].map(formation => {
-    return {
-      i: i + formation.i,
-      j: j + formation.j
+  const spots = AVAILABLE_FORMATIONS[entities.interaction.formationShape].map(
+    (formation) => {
+      return {
+        i: i + formation.i,
+        j: j + formation.j,
+      };
     }
-  })
+  );
 
   const output = [];
 
@@ -67,17 +66,19 @@ export const getValidUnitFormation = (
     );
 
     const spotColumn = spots[spotIndex].i;
-    const spotRow = spots[spotIndex].j
+    const spotRow = spots[spotIndex].j;
 
-    const hasColumnOption = spotColumn >= 0 && map.unitValid.length > spotColumn;
+    const hasColumnOption =
+      spotColumn >= 0 && map.unitValid.length > spotColumn;
     const hasRowOption = spotRow >= 0 && map.unitValid[0].length > spotRow;
 
-    const isValidPlacement = hasColumnOption
-      && hasRowOption
-      && map.unitValid[spotColumn][spotRow] === VALID_UNIT_POSITION;
+    const isValidPlacement =
+      hasColumnOption &&
+      hasRowOption &&
+      map.unitValid[spotColumn][spotRow] === VALID_UNIT_POSITION;
 
-    const selectedUnitAlreadyHere = unitTilePosition.i === spotColumn
-      && unitTilePosition.j === spotRow
+    const selectedUnitAlreadyHere =
+      unitTilePosition.i === spotColumn && unitTilePosition.j === spotRow;
 
     if (isValidPlacement || selectedUnitAlreadyHere) {
       output.push(spots[spotIndex]);
@@ -89,7 +90,7 @@ export const getValidUnitFormation = (
   }
 
   return output;
-}
+};
 
 // TODO: Refactor and move this to some kind of user interaction class
 export const rotateFormationShape = () => {
@@ -100,11 +101,10 @@ export const rotateFormationShape = () => {
   } else {
     entities.interaction.formationShape = 'auto';
   }
-}
+};
 
 export const isTileFreeAtPosition = (x: number, y: number) => {
   const { i: row, j: col } = getTileByPosition(x, y);
 
-  return map
-    .unitValid[row][col] !== OCCUPIED_UNIT_POSITION;
-}
+  return map.unitValid[row][col] !== OCCUPIED_UNIT_POSITION;
+};

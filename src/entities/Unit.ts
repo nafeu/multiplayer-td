@@ -20,7 +20,7 @@ import {
 import Enemy from './Enemy';
 import Bullet from './Bullet';
 
-class Unit extends Phaser.GameObjects.Image {
+export class Unit extends Phaser.GameObjects.Image {
   id: string;
 
   isMoving: boolean;
@@ -45,27 +45,11 @@ class Unit extends Phaser.GameObjects.Image {
     this.isSelected = false;
     this.activePath = [];
 
-    this.on('pointerdown', function (pointer) {
-      if (pointer.event.ctrlKey) {
-        this.destroy();
-        map.unitValid[this.tilePositionRow][this.tilePositionCol] =
-          VALID_UNIT_POSITION;
-        return;
-      }
-
-      if (pointer.event.shiftKey) {
-        const unitIsNotSelected =
-          entities.selectedUnits.find((unit) => unit.id === this.id) ===
-          undefined;
-
-        if (unitIsNotSelected) {
-          entities.selectedUnits.push(this);
-        }
-      } else {
-        entities.selectedUnits = [];
-        entities.selectedUnits.push(this);
-      }
-    });
+    this.on(
+      Phaser.Input.Events.POINTER_DOWN as string,
+      this.handlePointerDown,
+      this
+    );
   }
 
   place(i: number, j: number) {
@@ -118,7 +102,7 @@ class Unit extends Phaser.GameObjects.Image {
       OCCUPIED_UNIT_POSITION;
   }
 
-  update(time, delta) {
+  update(time: number, delta: number) {
     if (this.isMoving) {
       this.setTint(UNIT_MOVING_TINT);
     } else if (entities.selectedUnits.includes(this)) {
@@ -139,6 +123,30 @@ class Unit extends Phaser.GameObjects.Image {
 
     if (isMovingToTarget) {
       moveTowardsTarget(this, delta);
+    }
+  }
+
+  handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+    const keysDuringPointerEvent = pointer.event as Phaser.Input.Keyboard.Key;
+
+    if (keysDuringPointerEvent.ctrlKey) {
+      this.destroy();
+      map.unitValid[this.tilePositionRow][this.tilePositionCol] =
+        VALID_UNIT_POSITION;
+      return;
+    }
+
+    if (keysDuringPointerEvent.shiftKey) {
+      const unitIsNotSelected =
+        entities.selectedUnits.find((unit: Unit) => unit.id === this.id) ===
+        undefined;
+
+      if (unitIsNotSelected) {
+        entities.selectedUnits.push(this);
+      }
+    } else {
+      entities.selectedUnits = [];
+      entities.selectedUnits.push(this);
     }
   }
 }

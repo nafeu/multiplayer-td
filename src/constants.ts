@@ -60,7 +60,12 @@ export const INDICATOR_VALID_SELECTION_COLOR = 0x27ae60;
 export const INDICATOR_INVALID_SELECTION_COLOR = 0xc0392b;
 export const INDICATOR_OPACITY = 0.75;
 
-export const AVAILABLE_FORMATIONS = {
+type TileCoordinateOffset = {
+  i: number,
+  j: number
+}
+
+export const AVAILABLE_FORMATIONS: { [key: string]: Array<TileCoordinateOffset> } = {
   'auto': [
     { i: 0, j: 0 },
     { i: 0, j: 1 },

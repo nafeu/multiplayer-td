@@ -33,7 +33,7 @@ import {
   GRID_LINE_COLOR,
 } from '../constants';
 
-class Game extends Phaser.Scene {
+export class Game extends Phaser.Scene {
   finder: EasyStar.js;
   nextEnemy: number;
   playerHUD: Phaser.GameObjects.Text;
@@ -67,19 +67,22 @@ class Game extends Phaser.Scene {
     this.selection = addSelectionRectangle(this);
 
     this.input.on(
-      Phaser.Input.Events.POINTER_DOWN,
+      Phaser.Input.Events.POINTER_DOWN as string,
       this.handlePointerDown,
       this
     );
     this.input.on(
-      Phaser.Input.Events.POINTER_MOVE,
+      Phaser.Input.Events.POINTER_MOVE as string,
       this.handlePointerMove,
       this
     );
-    this.input.on(Phaser.Input.Events.POINTER_UP, this.handlePointerUp, this);
-
+    this.input.on(
+      Phaser.Input.Events.POINTER_UP as string,
+      this.handlePointerUp,
+      this
+    );
     this.input.keyboard.on(
-      Phaser.Input.Keyboard.Events.ANY_KEY_DOWN,
+      Phaser.Input.Keyboard.Events.ANY_KEY_DOWN as string,
       this.handleKeyDown,
       this
     );
@@ -144,11 +147,11 @@ class Game extends Phaser.Scene {
       .setOrigin(1, 0);
 
     // Setup Default Units
-    placeUnit({ x: 70, y: 250 });
-    placeUnit({ x: 100, y: 250 });
+    placeUnit(70, 250);
+    placeUnit(100, 250);
   }
 
-  update(time) {
+  update(time: number) {
     this.playerHUD.setText([
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
@@ -174,9 +177,10 @@ class Game extends Phaser.Scene {
     entities.pointer.update();
   }
 
-  handlePointerDown(pointer) {
-    if (pointer.event.ctrlKey) {
-      placeUnit(pointer);
+  handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+    const isHoldingCtrlKey = (pointer.event as Phaser.Input.Keyboard.Key).ctrlKey
+    if (isHoldingCtrlKey) {
+      placeUnit(pointer.x, pointer.y);
       return;
     }
 
@@ -193,7 +197,7 @@ class Game extends Phaser.Scene {
       if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y)) {
         this.finder.setGrid(map.unitValid);
 
-        entities.selectedUnits.forEach((selectedUnit, index) => {
+        entities.selectedUnits.forEach((selectedUnit: Unit, index) => {
           const originY = Math.floor(selectedUnit.y / TILE_SIZE);
           const originX = Math.floor(selectedUnit.x / TILE_SIZE);
 
@@ -223,7 +227,7 @@ class Game extends Phaser.Scene {
     }
   }
 
-  handlePointerMove(pointer) {
+  handlePointerMove = (pointer: Phaser.Input.Pointer) => {
     if (!pointer.isDown) return;
     if (pointer.rightButtonDown()) return;
 
@@ -234,7 +238,7 @@ class Game extends Phaser.Scene {
     this.selection.height += dy;
   }
 
-  handlePointerUp(pointer) {
+  handlePointerUp = (pointer: Phaser.Input.Pointer) => {
     const allUnits = entities.unitGroup.getChildren() as Array<Unit>;
     const isBoxSelection =
       this.selection.width !== 0 || this.selection.height !== 0;
@@ -285,7 +289,7 @@ class Game extends Phaser.Scene {
     }
   }
 
-  handleKeyDown(event) {
+  handleKeyDown = (event: { key: string }) => {
     if (event.key === 'a') {
       rotateFormationShape();
     }
@@ -339,18 +343,17 @@ function drawEnemyPath(
   return path;
 }
 
-function placeUnit(pointer) {
-  const i = Math.floor(pointer.y / TILE_SIZE);
-  const j = Math.floor(pointer.x / TILE_SIZE);
+function placeUnit(x: number, y: number) {
+  const row = Math.floor(y / TILE_SIZE);
+  const column = Math.floor(x / TILE_SIZE);
 
-  if (map.unitValid[i][j] === VALID_UNIT_POSITION) {
-    const unit = entities.unitGroup.get();
+  if (map.unitValid[row][column] === VALID_UNIT_POSITION) {
+    const unit = entities.unitGroup.get() as Unit;
 
     if (unit) {
       unit.setActive(true);
       unit.setVisible(true);
-      unit.place(i, j);
-      // so it can receive pointer events
+      unit.place(row, column);
       unit.setInteractive();
     }
   }

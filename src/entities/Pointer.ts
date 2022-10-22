@@ -8,7 +8,7 @@ import {
 } from '../constants';
 
 import {
-  getTileByPosition,
+  getTileCoordinatesByPosition,
   getValidUnitFormation,
   isTileFreeAtPosition,
   isDebugMode,
@@ -26,7 +26,7 @@ class Pointer extends Phaser.GameObjects.GameObject {
 
     this.indicator = graphics;
     scene.input.on(
-      Phaser.Input.Events.POINTER_MOVE,
+      Phaser.Input.Events.POINTER_MOVE as string,
       this.handlePointerMove,
       this
     );
@@ -76,12 +76,12 @@ class Pointer extends Phaser.GameObjects.GameObject {
     }
   }
 
-  handlePointerMove(pointer: Phaser.Input.Pointer) {
-    const { i: y, j: x } = getTileByPosition(pointer.x, pointer.y);
+  handlePointerMove = (pointer: Phaser.Input.Pointer) => {
+    const { i: y, j: x } = getTileCoordinatesByPosition(pointer.x, pointer.y);
 
     this.x = x * TILE_SIZE;
     this.y = y * TILE_SIZE;
-  }
+  };
 }
 
 export default Pointer;

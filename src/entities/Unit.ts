@@ -1,7 +1,7 @@
-import Phaser from 'phaser';
+import Phaser, { Scene } from 'phaser';
 
-import entities from '../entities'
-import map from '../map'
+import entities from '../entities';
+import map, { MapPath } from '../map';
 
 import { generateId, getPositionByTile } from '../utils';
 
@@ -17,18 +17,24 @@ import {
   UNIT_MOVING_TINT,
   UNIT_SELECTED_TINT,
 } from '../constants';
+import Enemy from './Enemy';
+import Bullet from './Bullet';
 
-const Unit = new Phaser.Class({
-  Extends: Phaser.GameObjects.Image,
-  initialize: function Unit(scene) {
-    Phaser.GameObjects.Image.call(
-      this,
-      scene,
-      0,
-      0,
-      SPRITE_ATLAS_NAME,
-      TANK_IMG_NAME
-    );
+class Unit extends Phaser.GameObjects.Image {
+  id: string;
+
+  isMoving: boolean;
+  target: Phaser.Math.Vector2;
+  speed: number;
+  nextTick: number;
+  isSelected: boolean;
+  activePath: MapPath | null;
+
+  tilePositionRow: number;
+  tilePositionCol: number;
+
+  constructor(scene: Scene) {
+    super(scene, 0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME);
 
     this.id = generateId('Unit');
 
@@ -48,9 +54,9 @@ const Unit = new Phaser.Class({
       }
 
       if (pointer.event.shiftKey) {
-        const unitIsNotSelected = entities.selectedUnits.find(
-          unit => unit.id === this.id
-        ) === undefined;
+        const unitIsNotSelected =
+          entities.selectedUnits.find((unit) => unit.id === this.id) ===
+          undefined;
 
         if (unitIsNotSelected) {
           entities.selectedUnits.push(this);
@@ -60,9 +66,9 @@ const Unit = new Phaser.Class({
         entities.selectedUnits.push(this);
       }
     });
-  },
+  }
 
-  place: function (i, j) {
+  place(i: number, j: number) {
     this.tilePositionRow = i;
     this.tilePositionCol = j;
 
@@ -76,9 +82,9 @@ const Unit = new Phaser.Class({
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
-  },
+  }
 
-  fire: function () {
+  fire() {
     const enemy = getEnemy(this.x, this.y, UNIT_FIRE_RANGE);
 
     if (enemy) {
@@ -86,9 +92,9 @@ const Unit = new Phaser.Class({
       addBullet(this.x, this.y, angle);
       this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
     }
-  },
+  }
 
-  move: function (path) {
+  move(path: MapPath) {
     const { x: tilePositionCol, y: tilePositionRow } = path[path.length - 1];
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
@@ -110,9 +116,9 @@ const Unit = new Phaser.Class({
 
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
-  },
+  }
 
-  update: function (time, delta) {
+  update(time, delta) {
     if (this.isMoving) {
       this.setTint(UNIT_MOVING_TINT);
     } else if (entities.selectedUnits.includes(this)) {
@@ -134,19 +140,19 @@ const Unit = new Phaser.Class({
     if (isMovingToTarget) {
       moveTowardsTarget(this, delta);
     }
-  },
-});
+  }
+}
 
-function addBullet(x, y, angle) {
-  const bullet = entities.bullets.get();
+function addBullet(x: number, y: number, angle: number) {
+  const bullet = entities.bullets.get() as Bullet | null;
 
   if (bullet) {
     bullet.fire(x, y, angle);
   }
 }
 
-function getEnemy(x, y, distance) {
-  const enemyUnits = entities.enemyGroup.getChildren();
+function getEnemy(x: number, y: number, distance: number) {
+  const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 
   for (let i = 0; i < enemyUnits.length; i++) {
     if (
@@ -160,7 +166,7 @@ function getEnemy(x, y, distance) {
   return false;
 }
 
-function moveTowardsTarget(unit, delta) {
+function moveTowardsTarget(unit: Unit, delta: number) {
   const distance = Phaser.Math.Distance.Between(
     unit.x,
     unit.y,

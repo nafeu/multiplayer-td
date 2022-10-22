@@ -1,6 +1,6 @@
-import Phaser from 'phaser';
+import Phaser, { Scene } from 'phaser';
 
-import map from '../map'
+import map from '../map';
 
 import HealthBar from './HealthBar';
 
@@ -13,18 +13,15 @@ import {
   ENEMY_SPEED,
 } from '../constants';
 
-const Enemy = new Phaser.Class({
-  Extends: Phaser.GameObjects.Image,
+class Enemy extends Phaser.GameObjects.Image {
+  id: string;
+  follower: { t: 0; vec: Phaser.Math.Vector2 };
+  hp: number;
+  healthBar: HealthBar;
+  recycled: number;
 
-  initialize: function Enemy(scene) {
-    Phaser.GameObjects.Image.call(
-      this,
-      scene,
-      0,
-      0,
-      SPRITE_ATLAS_NAME,
-      ENEMY_IMG_NAME
-    );
+  constructor(scene: Scene) {
+    super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
 
     this.id = generateId('Enemy');
 
@@ -33,21 +30,21 @@ const Enemy = new Phaser.Class({
 
     this.healthBar = new HealthBar(scene, -100, -100, ENEMY_HP, ENEMY_HP);
     this.recycled = 0;
-  },
+  }
 
-  _resetValuesForRecycle: function () {
+  _resetValuesForRecycle() {
     this.hp = ENEMY_HP;
     this.recycled += 1;
-  },
+  }
 
-  handleDeadOrRemoved: function () {
+  handleDeadOrRemoved() {
     this.setActive(false);
     this.setVisible(false);
     this.healthBar.clear();
     this._resetValuesForRecycle();
-  },
+  }
 
-  receiveDamage: function (damage) {
+  receiveDamage(damage: number) {
     this.hp -= damage;
 
     const shouldDeactivateEnemy = this.hp <= 0;
@@ -55,9 +52,9 @@ const Enemy = new Phaser.Class({
     if (shouldDeactivateEnemy) {
       this.handleDeadOrRemoved();
     }
-  },
+  }
 
-  startOnPath: function () {
+  startOnPath() {
     // set the t parameter at the start of the path
     this.follower.t = 0;
 
@@ -66,9 +63,9 @@ const Enemy = new Phaser.Class({
 
     // set the x and y of our enemy to the received from the previous step
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
-  },
+  }
 
-  update: function (time, delta) {
+  update(time: number, delta: number) {
     // move the t point along the path, 0 is the start and 0 is the end
     this.follower.t += ENEMY_SPEED * delta;
 
@@ -85,7 +82,7 @@ const Enemy = new Phaser.Class({
       this.healthBar.setHealth(this.hp);
       this.healthBar.draw();
     }
-  },
-});
+  }
+}
 
 export default Enemy;

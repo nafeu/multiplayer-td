@@ -13,5 +13,9 @@
   "dependencies": {
     "easystarjs": "^0.4.4",
     "phaser": "^3.55.2"
+  }, "scripts": {
+    "start": "bun dev",
+    "typecheck": "tsc --noemit --skipLibCheck",
+    "lint": "./node_modules/.bin/eslint ."
   }
 }

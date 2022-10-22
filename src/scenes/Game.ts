@@ -7,14 +7,14 @@ import Bullet from '../entities/Bullet';
 import Pointer from '../entities/Pointer';
 
 import map from '../map';
-import entities from '../entities.ts';
+import entities from '../entities';
 
 import {
   isDebugMode,
   sendUiAlert,
   getValidUnitFormation,
   rotateFormationShape,
-  isTileFreeAtPosition
+  isTileFreeAtPosition,
 } from '../utils';
 
 import {
@@ -30,14 +30,15 @@ import {
   BULLET_DAMAGE,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
-  GRID_LINE_COLOR
+  GRID_LINE_COLOR,
 } from '../constants';
 
 class Game extends Phaser.Scene {
+  finder: EasyStar.js;
   nextEnemy: number;
   playerHUD: Phaser.GameObjects.Text;
   pointer: Phaser.GameObjects.GameObject;
-  finder: EasyStar;
+  selection: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('main');
@@ -75,11 +76,7 @@ class Game extends Phaser.Scene {
       this.handlePointerMove,
       this
     );
-    this.input.on(
-      Phaser.Input.Events.POINTER_UP,
-      this.handlePointerUp,
-      this
-    );
+    this.input.on(Phaser.Input.Events.POINTER_UP, this.handlePointerUp, this);
 
     this.input.keyboard.on(
       Phaser.Input.Keyboard.Events.ANY_KEY_DOWN,
@@ -102,11 +99,11 @@ class Game extends Phaser.Scene {
       runChildUpdate: true,
       maxSize: UNIT_SQUAD_SIZE,
       // use createCallback to pass the scene for post initialization stuff
-      // createCallback: function (unit: typeof Unit) {
-      //   console.log('### Unit Created', unit.id);
+      createCallback: function (unit: Unit) {
+        console.log('### Unit Created', unit.id, unit);
 
-      //   unit.postInitialize(map, getEnemy, () => entities.bullets.get());
-      // },
+        // unit.postInitialize(map, getEnemy, () => entities.bullets.get());
+      },
     });
 
     entities.enemyGroup = this.physics.add.group({
@@ -126,10 +123,18 @@ class Game extends Phaser.Scene {
       runChildUpdate: true,
     });
 
+    // this is a type helper
+    // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
+    // and doesn't technically guarantee ordering of the objects being compared
+    // so this wrapper is taking responsibility of this assumption
+    function wrappedDamageEnemy(enemy, bullet) {
+      return damageEnemy(enemy as Enemy, bullet as Bullet);
+    }
+
     this.physics.add.overlap(
       entities.enemyGroup,
       entities.bullets,
-      damageEnemy
+      wrappedDamageEnemy
     );
 
     this.playerHUD = this.add
@@ -155,7 +160,7 @@ class Game extends Phaser.Scene {
     const shouldSpawnEnemy = time > this.nextEnemy;
 
     if (shouldSpawnEnemy) {
-      const enemy = entities.enemyGroup.get();
+      const enemy = entities.enemyGroup.get() as Enemy | null;
 
       if (enemy) {
         enemy.setActive(true);
@@ -194,13 +199,20 @@ class Game extends Phaser.Scene {
 
           const validMove = validUnitFormation[index];
 
-          this.finder.findPath(originX, originY, validMove.j, validMove.i, (path) => {
-            if (path) {
-              selectedUnit.move(path);
-            } else {
-              sendUiAlert({ invalidCommand: `Path not found.` })
+          this.finder.findPath(
+            originX,
+            originY,
+            validMove.j,
+            validMove.i,
+            (path) => {
+              if (path) {
+                console.log('### Path Found: ', path);
+                selectedUnit.move(path);
+              } else {
+                sendUiAlert({ invalidCommand: `Path not found.` });
+              }
             }
-          });
+          );
 
           this.finder.calculate();
         });
@@ -223,8 +235,9 @@ class Game extends Phaser.Scene {
   }
 
   handlePointerUp(pointer) {
-    const isBoxSelection = this.selection.width !== 0
-      || this.selection.height !== 0
+    const allUnits = entities.unitGroup.getChildren() as Array<Unit>;
+    const isBoxSelection =
+      this.selection.width !== 0 || this.selection.height !== 0;
 
     if (isBoxSelection) {
       const selectionRect = new Phaser.Geom.Rectangle(
@@ -248,7 +261,7 @@ class Game extends Phaser.Scene {
         selectionRect.height *= -1;
       }
 
-      const selected = entities.unitGroup.getChildren().filter((unit) => {
+      const selected = allUnits.filter((unit) => {
         const rect = unit.getBounds();
 
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
@@ -259,13 +272,12 @@ class Game extends Phaser.Scene {
       this.selection.width = 0;
       this.selection.height = 0;
     } else {
-      const allUnits = entities.unitGroup.getChildren();
-      const hasNotClickedAnyUnits = !allUnits.find(unit => (
+      const hasNotClickedAnyUnits = !allUnits.find((unit) =>
         unit.getBounds().contains(pointer.x, pointer.y)
-      ));
+      );
 
-      const hasClickedOnEmptySpace = hasNotClickedAnyUnits
-        && !pointer.rightButtonReleased()
+      const hasClickedOnEmptySpace =
+        hasNotClickedAnyUnits && !pointer.rightButtonReleased();
 
       if (hasClickedOnEmptySpace) {
         entities.selectedUnits = [];
@@ -344,7 +356,7 @@ function placeUnit(pointer) {
   }
 }
 
-function damageEnemy(enemy, bullet) {
+function damageEnemy(enemy: Enemy, bullet: Bullet) {
   const ifEnemyAndBulletAlive = enemy.active && bullet.active;
 
   if (ifEnemyAndBulletAlive) {
@@ -355,18 +367,16 @@ function damageEnemy(enemy, bullet) {
   }
 }
 
-function disableBrowserRightClickMenu(scene) {
+function disableBrowserRightClickMenu(scene: Phaser.Scene) {
   scene.input.mouse.disableContextMenu();
 }
 
-function configurePathFindingGrid(finder: EasyStar) {
+function configurePathFindingGrid(finder: EasyStar.js) {
   finder.setGrid(map.unitValid);
-  finder.setAcceptableTiles(
-    [VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]
-  );
+  finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
 }
 
-function addSelectionRectangle(scene) {
+function addSelectionRectangle(scene: Phaser.Scene) {
   return scene.add.rectangle(
     0,
     0,

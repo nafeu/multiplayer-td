@@ -11,30 +11,41 @@ import Unit from './entities/Unit';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const noop = () => {};
 
-export const clone = (b) => JSON.parse(JSON.stringify(b));
+export const clone = (b): unknown => JSON.parse(JSON.stringify(b));
 
+/*
+  TODO: 'Window' type is not being detected from DOM lib, problematic
+        for typechecking, we need to fix this.
+*/
 export const isDebugMode = !window.location.search.includes('preview=true');
 
 export const getPositionByTile = (coordinate: number) => {
   return coordinate * TILE_SIZE + TILE_SIZE / 2;
 };
 
-const ID_MAP = {};
+const ID_MAP: Record<string, number> = {};
 
 export const generateId = (key: string) => {
   ID_MAP[key] = (ID_MAP[key] ?? 0) + 1;
   return `${key}:${ID_MAP[key]}`;
 };
 
-export const getTileByPosition = (x: number, y: number) => {
+export const getTileCoordinatesByPosition = (
+  x: number,
+  y: number
+): TileCoordinates => {
   const j = Math.floor(x / TILE_SIZE);
   const i = Math.floor(y / TILE_SIZE);
 
   return { i, j };
 };
 
-export const sendUiAlert = (alertInfo: any) => {
-  // TODO: Remove this and utilize a proper UI alert class
+/*
+  TODO: Remove this and utilize a proper UI alert class.
+        Set an 'unknown' type for the time being so we can
+        experiment with different alertInfo payloads
+*/
+export const sendUiAlert = (alertInfo: unknown) => {
   console.info(alertInfo);
 };
 
@@ -42,25 +53,25 @@ export const getValidUnitFormation = (
   x: number,
   y: number,
   units: Array<Unit>
-) => {
-  const { i, j } = getTileByPosition(x, y);
+): Array<TileCoordinates> => {
+  const { i, j } = getTileCoordinatesByPosition(x, y);
 
-  const spots = AVAILABLE_FORMATIONS[entities.interaction.formationShape].map(
-    (formation) => {
-      return {
-        i: i + formation.i,
-        j: j + formation.j,
-      };
-    }
-  );
+  const spots = AVAILABLE_FORMATIONS[
+    entities.interaction.formationShape
+  ].map((formation) => {
+    return {
+      i: i + formation.i,
+      j: j + formation.j,
+    };
+  });
 
-  const output = [];
+  const output: Array<TileCoordinates> = [];
 
   let unitsIndex = 0;
   let spotIndex = 0;
 
   while (unitsIndex < units.length && spotIndex < spots.length) {
-    const unitTilePosition = getTileByPosition(
+    const unitTilePosition = getTileCoordinatesByPosition(
       units[unitsIndex].x,
       units[unitsIndex].y
     );
@@ -104,7 +115,7 @@ export const rotateFormationShape = () => {
 };
 
 export const isTileFreeAtPosition = (x: number, y: number) => {
-  const { i: row, j: col } = getTileByPosition(x, y);
+  const { i: row, j: col } = getTileCoordinatesByPosition(x, y);
 
   return map.unitValid[row][col] !== OCCUPIED_UNIT_POSITION;
 };

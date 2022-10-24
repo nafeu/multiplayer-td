@@ -30,6 +30,12 @@ Run dev server (served on [localhost:300X](http://localhost:3000))
 bun dev
 ```
 
+Activate githooks
+```bash
+cp -R hooks/ .git/hooks/
+chmod ug+x .git/hooks/*
+```
+
 ## Resources
 
 #### Spritesheets

@@ -1,0 +1,11 @@
+#!/bin/sh
+ROOT_DIR=$(git rev-parse --show-toplevel)
+
+cd $ROOT_DIR
+
+echo '[PRE-COMMIT] Checking Types...'
+bun run typecheck
+echo '[PRE-COMMIT] Linting...'
+bun run lint
+
+if [ $? -ne 0 ]; then exit 1; fi

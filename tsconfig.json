@@ -8,14 +8,14 @@
     // so I wanted to disable it, but I am not sure of the implications during development.
     // Now I only run it when running the typechecker via package.json
     // https://bobbyhadz.com/blog/typescript-disable-type-checking-node-modules
-    // "skipLibCheck": false,
     "target": "esnext",
     // "bun-types" is the important part
     "types": ["bun-types", "Phaser"],
     "typeRoots": [
       "node_modules/@types",
       "node_module/phaser/types"
-    ]
+    ],
+    "skipLibCheck": true
   },
   "exclude": ["node_modules"]
 }

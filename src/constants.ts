@@ -23,7 +23,7 @@ export const UNIT_FIRE_RATE_MS = 100;
 export const UNIT_SQUAD_SIZE = 5;
 export const UNIT_SNAP_DISTANCE = 2;
 export const UNIT_MOVING_TINT = 0xc0392b;
-export const UNIT_SELECTED_TINT = 0xf1c40f;
+export const UNIT_SELECTED_TILE_BORDER = 0x0000ff;
 
 export const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 export const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;
@@ -61,12 +61,14 @@ export const INDICATOR_INVALID_SELECTION_COLOR = 0xc0392b;
 export const INDICATOR_OPACITY = 0.75;
 
 type TileCoordinateOffset = {
-  i: number,
-  j: number
-}
+  i: number;
+  j: number;
+};
 
-export const AVAILABLE_FORMATIONS: { [key: string]: Array<TileCoordinateOffset> } = {
-  'auto': [
+export const AVAILABLE_FORMATIONS: {
+  [key: string]: Array<TileCoordinateOffset>;
+} = {
+  auto: [
     { i: 0, j: 0 },
     { i: 0, j: 1 },
     { i: 1, j: 0 },
@@ -75,23 +77,23 @@ export const AVAILABLE_FORMATIONS: { [key: string]: Array<TileCoordinateOffset> 
     { i: 1, j: 1 },
     { i: 1, j: -1 },
     { i: -1, j: 1 },
-    { i: -1, j: -1 }
+    { i: -1, j: -1 },
   ],
-  'horizontal': [
+  horizontal: [
     { i: 0, j: 0 },
     { i: 0, j: 1 },
     { i: 0, j: -1 },
     { i: 0, j: 2 },
-    { i: 0, j: -2 }
+    { i: 0, j: -2 },
   ],
-  'vertical': [
+  vertical: [
     { i: 0, j: 0 },
     { i: 1, j: 0 },
     { i: -1, j: 0 },
     { i: 2, j: 0 },
-    { i: -2, j: 0 }
-  ]
-}
+    { i: -2, j: 0 },
+  ],
+};
 
 export const DEFAULT_FORMATION_SHAPE = 'auto';
 

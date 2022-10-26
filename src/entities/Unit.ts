@@ -105,7 +105,7 @@ export class Unit extends Phaser.GameObjects.Image {
   update(time: number, delta: number) {
     if (this.isMoving) {
       this.setTint(UNIT_MOVING_TINT);
-    } else if (entities.selectedUnits.includes(this)) {
+    } else if (entities.selectedUnitGroup.hasUnit(this)) {
       this.setTint(UNIT_SELECTED_TINT);
     } else {
       this.clearTint();
@@ -137,18 +137,16 @@ export class Unit extends Phaser.GameObjects.Image {
     }
 
     if (keysDuringPointerEvent.shiftKey) {
-      const unitIsNotSelected =
-        entities.selectedUnits.find((unit: Unit) => unit.id === this.id) ===
-        undefined;
+      const unitIsNotSelected = !entities.selectedUnitGroup.hasUnit(this);
 
       if (unitIsNotSelected) {
-        entities.selectedUnits.push(this);
+        entities.selectedUnitGroup.addUnit(this);
       }
     } else {
-      entities.selectedUnits = [];
-      entities.selectedUnits.push(this);
+      entities.selectedUnitGroup.clearUnits();
+      entities.selectedUnitGroup.addUnit(this);
     }
-  }
+  };
 }
 
 function addBullet(x: number, y: number, angle: number) {

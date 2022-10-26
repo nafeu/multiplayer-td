@@ -52,18 +52,18 @@ export const sendUiAlert = (alertInfo: unknown) => {
 export const getValidUnitFormation = (
   x: number,
   y: number,
-  units: Array<Unit>
+  units: readonly Unit[]
 ): Array<TileCoordinates> => {
   const { i, j } = getTileCoordinatesByPosition(x, y);
 
-  const spots = AVAILABLE_FORMATIONS[
-    entities.interaction.formationShape
-  ].map((formation) => {
-    return {
-      i: i + formation.i,
-      j: j + formation.j,
-    };
-  });
+  const spots = AVAILABLE_FORMATIONS[entities.interaction.formationShape].map(
+    (formation) => {
+      return {
+        i: i + formation.i,
+        j: j + formation.j,
+      };
+    }
+  );
 
   const output: Array<TileCoordinates> = [];
 

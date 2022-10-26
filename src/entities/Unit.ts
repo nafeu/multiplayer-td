@@ -3,7 +3,11 @@ import Phaser, { Scene } from 'phaser';
 import entities from '../entities';
 import map, { MapPath } from '../map';
 
-import { generateId, getPositionByTile } from '../utils';
+import {
+  generateId,
+  getPositionByTile,
+  getTileCoordinatesByPosition,
+} from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
@@ -15,10 +19,11 @@ import {
   UNIT_FIRE_RATE_MS,
   UNIT_SNAP_DISTANCE,
   UNIT_MOVING_TINT,
-  UNIT_SELECTED_TINT,
+  UNIT_SELECTED_TILE_BORDER,
 } from '../constants';
 import Enemy from './Enemy';
 import Bullet from './Bullet';
+import { TileHighlight } from './TileHighlight';
 
 export class Unit extends Phaser.GameObjects.Image {
   id: string;
@@ -29,6 +34,8 @@ export class Unit extends Phaser.GameObjects.Image {
   nextTick: number;
   isSelected: boolean;
   activePath: MapPath | null;
+
+  highlight: TileHighlight;
 
   tilePositionRow: number;
   tilePositionCol: number;
@@ -44,6 +51,8 @@ export class Unit extends Phaser.GameObjects.Image {
     this.nextTick = 0;
     this.isSelected = false;
     this.activePath = [];
+
+    this.highlight = new TileHighlight(scene, 2, UNIT_SELECTED_TILE_BORDER);
 
     this.on(
       Phaser.Input.Events.POINTER_DOWN as string,
@@ -105,10 +114,15 @@ export class Unit extends Phaser.GameObjects.Image {
   update(time: number, delta: number) {
     if (this.isMoving) {
       this.setTint(UNIT_MOVING_TINT);
-    } else if (entities.selectedUnitGroup.hasUnit(this)) {
-      this.setTint(UNIT_SELECTED_TINT);
     } else {
       this.clearTint();
+    }
+
+    if (entities.selectedUnitGroup.hasUnit(this)) {
+      const { i, j } = getTileCoordinatesByPosition(this.x, this.y);
+      this.highlight.updatePositionByTile(i, j).draw();
+    } else {
+      this.highlight.clear();
     }
 
     const shouldShoot = time > this.nextTick;

@@ -156,7 +156,7 @@ export class Game extends Phaser.Scene {
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${entities.selectedUnits.length}`,
+      `Units Selected: ${entities.selectedUnitGroup.size()}`,
       `Formation: ${entities.interaction.formationShape}`,
     ]);
 
@@ -178,7 +178,8 @@ export class Game extends Phaser.Scene {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
-    const isHoldingCtrlKey = (pointer.event as Phaser.Input.Keyboard.Key).ctrlKey
+    const isHoldingCtrlKey = (pointer.event as Phaser.Input.Keyboard.Key)
+      .ctrlKey;
     if (isHoldingCtrlKey) {
       placeUnit(pointer.x, pointer.y);
       return;
@@ -188,44 +189,46 @@ export class Game extends Phaser.Scene {
       const validUnitFormation = getValidUnitFormation(
         pointer.x,
         pointer.y,
-        entities.selectedUnits
+        entities.selectedUnitGroup.getUnits()
       );
 
-      const selectedUnitCount = entities.selectedUnits.length;
+      const selectedUnitCount = entities.selectedUnitGroup.size();
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
       if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y)) {
         this.finder.setGrid(map.unitValid);
 
-        entities.selectedUnits.forEach((selectedUnit: Unit, index) => {
-          const originY = Math.floor(selectedUnit.y / TILE_SIZE);
-          const originX = Math.floor(selectedUnit.x / TILE_SIZE);
+        entities.selectedUnitGroup
+          .getUnits()
+          .forEach((selectedUnit: Unit, index) => {
+            const originY = Math.floor(selectedUnit.y / TILE_SIZE);
+            const originX = Math.floor(selectedUnit.x / TILE_SIZE);
 
-          const validMove = validUnitFormation[index];
+            const validMove = validUnitFormation[index];
 
-          this.finder.findPath(
-            originX,
-            originY,
-            validMove.j,
-            validMove.i,
-            (path) => {
-              if (path) {
-                console.log('### Path Found: ', path);
-                selectedUnit.move(path);
-              } else {
-                sendUiAlert({ invalidCommand: `Path not found.` });
+            this.finder.findPath(
+              originX,
+              originY,
+              validMove.j,
+              validMove.i,
+              (path) => {
+                if (path) {
+                  console.log('### Path Found: ', path);
+                  selectedUnit.move(path);
+                } else {
+                  sendUiAlert({ invalidCommand: `Path not found.` });
+                }
               }
-            }
-          );
+            );
 
-          this.finder.calculate();
-        });
+            this.finder.calculate();
+          });
       }
     } else {
       this.selection.x = pointer.x;
       this.selection.y = pointer.y;
     }
-  }
+  };
 
   handlePointerMove = (pointer: Phaser.Input.Pointer) => {
     if (!pointer.isDown) return;
@@ -236,7 +239,7 @@ export class Game extends Phaser.Scene {
 
     this.selection.width += dx;
     this.selection.height += dy;
-  }
+  };
 
   handlePointerUp = (pointer: Phaser.Input.Pointer) => {
     const allUnits = entities.unitGroup.getChildren() as Array<Unit>;
@@ -271,7 +274,7 @@ export class Game extends Phaser.Scene {
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
       });
 
-      entities.selectedUnits = selected;
+      selected.forEach(entities.selectedUnitGroup.addUnit);
 
       this.selection.width = 0;
       this.selection.height = 0;
@@ -284,16 +287,16 @@ export class Game extends Phaser.Scene {
         hasNotClickedAnyUnits && !pointer.rightButtonReleased();
 
       if (hasClickedOnEmptySpace) {
-        entities.selectedUnits = [];
+        entities.selectedUnitGroup.clearUnits();
       }
     }
-  }
+  };
 
   handleKeyDown = (event: { key: string }) => {
     if (event.key === 'a') {
       rotateFormationShape();
     }
-  }
+  };
 }
 
 function drawGrid(graphics: Phaser.GameObjects.Graphics) {

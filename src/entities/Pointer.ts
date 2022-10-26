@@ -40,14 +40,14 @@ class Pointer extends Phaser.GameObjects.GameObject {
 
     this.indicator.clear();
 
-    const selectedUnitCount = entities.selectedUnits.length;
+    const selectedUnitCount = entities.selectedUnitGroup.size();
     const hasSelectedUnits = selectedUnitCount > 0;
 
     if (hasSelectedUnits) {
       const validUnitFormation = getValidUnitFormation(
         this.x,
         this.y,
-        entities.selectedUnits
+        entities.selectedUnitGroup.getUnits()
       );
 
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
@@ -58,7 +58,7 @@ class Pointer extends Phaser.GameObjects.GameObject {
           INDICATOR_OPACITY
         );
 
-        entities.selectedUnits.forEach((_, index) => {
+        entities.selectedUnitGroup.getUnits().forEach((_, index) => {
           this.indicator.fillRect(
             validUnitFormation[index].j * TILE_SIZE,
             validUnitFormation[index].i * TILE_SIZE,

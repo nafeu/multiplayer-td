@@ -24,6 +24,9 @@ export const UNIT_SQUAD_SIZE = 5;
 export const UNIT_SNAP_DISTANCE = 2;
 export const UNIT_MOVING_TINT = 0xc0392b;
 export const UNIT_SELECTED_TILE_BORDER = 0x0000ff;
+export const UNIT_SELECTED_TINT = 0xf1c40f;
+export const UNIT_PREPARING_TINT = 0x808080;
+export const UNIT_PREPARING_ANIMATION_DELAY_MS = 2_000;
 
 export const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 export const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;

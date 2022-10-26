@@ -214,7 +214,7 @@ export class Game extends Phaser.Scene {
               (path) => {
                 if (path) {
                   console.log('### Path Found: ', path);
-                  selectedUnit.move(path);
+                  selectedUnit.queueMove(path);
                 } else {
                   sendUiAlert({ invalidCommand: `Path not found.` });
                 }

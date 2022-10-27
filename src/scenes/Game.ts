@@ -274,6 +274,12 @@ export class Game extends Phaser.Scene {
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
       });
 
+      const shiftKeyIsNotPressed = !(pointer.event as Phaser.Input.Keyboard.Key)
+        .shiftKey;
+      if (shiftKeyIsNotPressed) {
+        entities.selectedUnitGroup.clearUnits();
+      }
+
       selected.forEach(entities.selectedUnitGroup.addUnit);
 
       this.selection.width = 0;

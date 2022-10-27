@@ -14,6 +14,15 @@ const selectedUnitsManager = {
       (curr: Unit) => curr !== unit
     );
   },
+  toggleUnit: (unit: Unit) => {
+    if (selectedUnitsReference.includes(unit)) {
+      selectedUnitsReference = selectedUnitsReference.filter(
+        (curr: Unit) => curr !== unit
+      );
+    } else {
+      selectedUnitsReference.push(unit);
+    }
+  },
   size: () => selectedUnitsReference.length,
 };
 

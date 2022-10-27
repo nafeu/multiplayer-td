@@ -246,11 +246,7 @@ export class Unit extends Phaser.GameObjects.Image {
     }
 
     if (keysDuringPointerEvent.shiftKey) {
-      const unitIsNotSelected = !entities.selectedUnitGroup.hasUnit(this);
-
-      if (unitIsNotSelected) {
-        entities.selectedUnitGroup.addUnit(this);
-      }
+      entities.selectedUnitGroup.toggleUnit(this);
     } else {
       entities.selectedUnitGroup.clearUnits();
       entities.selectedUnitGroup.addUnit(this);

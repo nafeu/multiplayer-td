@@ -103,8 +103,21 @@ export class Unit extends Phaser.GameObjects.Image {
    * @param path {MapPath}
    */
   queueMove(path: MapPath) {
-    this._queuedPath = path;
     this._machine.send({ type: ACTIONS.MOVE_TO, path });
+  }
+
+  /**
+   * [Semi-Private API] called by State Machine
+   * persists path object as queued path
+   *
+   * @param path {MapPath}
+   */
+  queueNewPath(path: MapPath) {
+    this._queuedPath = path;
+  }
+
+  hasQueuedPath() {
+    return this._queuedPath.length > 0;
   }
 
   /**
@@ -144,6 +157,7 @@ export class Unit extends Phaser.GameObjects.Image {
    */
   startMovingToQueuedPath() {
     const path = this._queuedPath;
+
     // find Final position
     const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
 

@@ -1,4 +1,4 @@
-import { createMachine, interpret, send } from 'xstate';
+import { createMachine, interpret } from 'xstate';
 import { UNIT_PREPARING_ANIMATION_DELAY_MS } from '../constants';
 import { MapPath } from '../map';
 
@@ -120,16 +120,18 @@ export function boundStateMachine(unit: Unit) {
         // no path pathload since it's emitted by the internal state transition,
         // use unit.activePath or just call unit.move()
         console.log(`### [${context.unit.id}]: moving to position`);
-        context.unit.move();
+        context.unit.startMovingToQueuedPath();
       },
       updateDestination: (context, event) => {
         console.log(
           `### [${context.unit.id}]: moving towards new position`,
-          (event.path as MapPath).at(-1)
+          (event.path as MapPath).at(-1),
+          'triggered by',
+          event.type,
+          'using path',
+          event.path
         );
-
-        context.unit._queuedPath = event.path as MapPath;
-        context.unit.move();
+        context.unit.overrideActivePath(event.path as MapPath);
       },
       prepareToSeige: (context, event) => {
         console.log(`### [${context.unit.id}]: preparing to be seiged`);

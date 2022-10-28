@@ -46,8 +46,14 @@ const fetchMachine = createMachine<Context>(
     },
     states: {
       [STATES.SEIGED]: {
+        always: [
+          {
+            target: STATES.PREPARING_TO_MOVE,
+            cond: unitHasQueuedPath,
+            actions: ['startNewQueuedMove'],
+          },
+        ],
         on: {
-          '': [{ target: STATES.PREPARING_TO_MOVE, cond: unitHasQueuedPath }],
           [ACTIONS.MOVE_TO]: {
             target: STATES.PREPARING_TO_MOVE,
             actions: ['prepareToMove'],
@@ -58,7 +64,7 @@ const fetchMachine = createMachine<Context>(
         entry: ['queueTransitionToMove'],
         on: {
           [ACTIONS.MOVE_TO]: {
-            actions: ['updateDestination'],
+            actions: ['updateQueuedDestination'],
           },
           [_PRIVATE_ACTIONS.COMMIT_MOVE_TO]: {
             target: STATES.MOVING,
@@ -99,6 +105,9 @@ const fetchMachine = createMachine<Context>(
       queueNewMove: (context, event) => {
         console.log('queueing path', event.path);
       },
+      startNewQueuedMove: (context, event) => {
+        console.log('start on new queued path');
+      },
       prepareToMove: (context, event) => {
         console.log('preparing to move from seiged position');
       },
@@ -124,6 +133,9 @@ const fetchMachine = createMachine<Context>(
           );
         }, UNIT_PREPARING_ANIMATION_DELAY_MS);
       },
+      updateQueuedDestination: (context, event) => {
+        console.log('queueing new position');
+      },
       updateDestination: (context, event) => {
         console.log('moving towards new position');
       },
@@ -141,6 +153,12 @@ export function boundStateMachine(unit: Unit) {
         console.log(`### [${context.unit.id}]: queueing path`, event.path);
         context.unit.queueNewPath(event.path as MapPath);
       },
+      startNewQueuedMove: (context, event) => {
+        console.log(
+          `### [${context.unit.id}]: start on new queued path`,
+          context.unit._queuedPath
+        );
+      },
       prepareToMove: (context, event) => {
         console.log(
           `### [${context.unit.id}]: preparing to move from seiged position`
@@ -151,10 +169,18 @@ export function boundStateMachine(unit: Unit) {
         console.log(
           `### [${context.unit.id}]: queuing delayed transition using phaser timer`
         );
+        console.assert(
+          !!context.unit._queuedPath.length,
+          `### [${context.unit.id}]: has no _queuedPath`,
+          context.unit._queuedPath
+        );
         context.unit.scene.time.delayedCall(
           UNIT_PREPARING_ANIMATION_DELAY_MS,
           () => {
-            console.log(`### [${context.unit.id}]: commiting move to`);
+            console.log(
+              `### [${context.unit.id}]: commiting move to`,
+              context.unit._queuedPath
+            );
             context.unit._machine.send({
               type: _PRIVATE_ACTIONS.COMMIT_MOVE_TO,
             });
@@ -164,8 +190,22 @@ export function boundStateMachine(unit: Unit) {
       moveTo: (context, event) => {
         // no path pathload since it's emitted by the internal state transition,
         // use unit.activePath or just call unit.move()
-        console.log(`### [${context.unit.id}]: moving to position`);
+        console.log(
+          `### [${context.unit.id}]: moving to position`,
+          context.unit._queuedPath
+        );
         context.unit.startMovingToQueuedPath();
+      },
+      updateQueuedDestination: (context, event) => {
+        console.log(
+          `### [${context.unit.id}]: queueing new position`,
+          (event.path as MapPath).at(-1),
+          'triggered by',
+          event.type,
+          'using path',
+          event.path
+        );
+        context.unit.queueNewPath(event.path as MapPath);
       },
       updateDestination: (context, event) => {
         console.log(

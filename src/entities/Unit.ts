@@ -32,8 +32,16 @@ export class Unit extends Phaser.GameObjects.Image {
   speed: number;
   nextTick: number;
   isSelected: boolean;
-  activePath: MapPath | null;
-  _queuedPath: MapPath | null;
+
+  // path queued to be moving towards
+  // only used persist requests when in transition states
+  // to request new destination
+  _queuedPath: MapPath;
+
+  // path currently being consumed by Unit
+  // only used when unit is moving
+  activePath: MapPath;
+
   _machine: ReturnType<typeof boundStateMachine>;
 
   highlight: TileHighlight;
@@ -135,6 +143,9 @@ export class Unit extends Phaser.GameObjects.Image {
     this._queuedPath = path;
   }
 
+  /**
+   * [Semi-Private API] called by State Machine
+   */
   hasQueuedPath() {
     return this._queuedPath.length > 0;
   }

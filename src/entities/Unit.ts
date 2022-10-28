@@ -67,6 +67,25 @@ export class Unit extends Phaser.GameObjects.Image {
     );
   }
 
+  toString() {
+    const selected = entities.selectedUnitGroup.hasUnit(this) ? '*' : '';
+
+    let movingStatus = '';
+    const destination = this.activePath.at(-1);
+    if (this.isMoving() && destination) {
+      const destinationTile = getTileCoordinatesByPosition(
+        destination.x,
+        destination.y
+      );
+      movingStatus = ` -> (${destinationTile.i},${destinationTile.j})`;
+    }
+
+    const currentTile = getTileCoordinatesByPosition(this.x, this.y);
+    const currentState = this._machine.getSnapshot().value.toString();
+
+    return `${selected}${this.id} [${currentState}] (${currentTile.i}, ${currentTile.j})${movingStatus}`;
+  }
+
   destroy(fromScene?: boolean): void {
     this._machine.stop();
     super.destroy(fromScene);
@@ -98,15 +117,70 @@ export class Unit extends Phaser.GameObjects.Image {
     }
   }
 
+  /**
+   * queues unit to move along path
+   * @param path {MapPath}
+   */
   queueMove(path: MapPath) {
-    this._queuedPath = path;
     this._machine.send({ type: ACTIONS.MOVE_TO, path });
   }
 
-  move() {
+  /**
+   * [Semi-Private API] called by State Machine
+   * persists path object as queued path
+   *
+   * @param path {MapPath}
+   */
+  queueNewPath(path: MapPath) {
+    this._queuedPath = path;
+  }
+
+  hasQueuedPath() {
+    return this._queuedPath.length > 0;
+  }
+
+  /**
+   * [Semi-Private API] called by State Machine
+   * override destination for this Unit while it is moving
+   *
+   * should only be called when Unit is already moving (state === MOVING)
+   * towards original destination
+   *
+   * @param path {MapPath}
+   */
+  overrideActivePath(path: MapPath) {
+    if (!path.length) {
+      console.error(
+        `${this.id} sent invalid .overrideActivePath() command`,
+        path
+      );
+      return;
+    }
+
+    if (this.activePath.length === 0) {
+      console.error(
+        `${this.id} sent invalid .overrideActivePath() command | no active path`,
+        this.activePath
+      );
+    }
+
+    this._queuedPath = path;
+    this.startMovingToQueuedPath();
+  }
+
+  /**
+   * [Semi-Private API] called by State Machine
+   * start moving this Unit towards queued destination
+   *
+   * currently also does destination validation
+   */
+  startMovingToQueuedPath() {
     const path = this._queuedPath;
+
+    // find Final position
     const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
 
+    // mark current tile as vacant
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       VALID_UNIT_POSITION;
 
@@ -121,9 +195,10 @@ export class Unit extends Phaser.GameObjects.Image {
 
     if (this.target.y !== this.y || this.target.x !== this.x) {
       this.activePath = path;
-      this._queuedPath = [];
     }
+    this._queuedPath = [];
 
+    // mark final tile as occupied
     map.unitValid[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
@@ -190,11 +265,7 @@ export class Unit extends Phaser.GameObjects.Image {
     }
 
     if (keysDuringPointerEvent.shiftKey) {
-      const unitIsNotSelected = !entities.selectedUnitGroup.hasUnit(this);
-
-      if (unitIsNotSelected) {
-        entities.selectedUnitGroup.addUnit(this);
-      }
+      entities.selectedUnitGroup.toggleUnit(this);
     } else {
       entities.selectedUnitGroup.clearUnits();
       entities.selectedUnitGroup.addUnit(this);
@@ -238,11 +309,12 @@ function moveTowardsTarget(unit: Unit, delta: number) {
   if (isAtTarget) {
     unit.x = unit.target.x;
     unit.y = unit.target.y;
+
+    unit.activePath = [];
     unit._machine.send({ type: ACTIONS.STOP });
 
     return;
   } else {
-    if (!unit.activePath.length) console.error('### FAILURE', unit.activePath);
     const activePathTargetX = getPositionByTile(unit.activePath[0].x);
     const activePathTargetY = getPositionByTile(unit.activePath[0].y);
 

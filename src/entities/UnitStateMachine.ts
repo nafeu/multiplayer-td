@@ -1,4 +1,4 @@
-import { createMachine, interpret, send } from 'xstate';
+import { createMachine, interpret } from 'xstate';
 import { UNIT_PREPARING_ANIMATION_DELAY_MS } from '../constants';
 import { MapPath } from '../map';
 
@@ -24,6 +24,8 @@ export const STATES = {
   PREPARING_TO_SEIGE: 'PREPARING_TO_SEIGE',
 };
 
+const unitHasQueuedPath = (context: Context) => context.unit.hasQueuedPath();
+
 // Note: assumes all MOVE_TOs are valid
 const fetchMachine = createMachine<Context>(
   {
@@ -35,6 +37,7 @@ const fetchMachine = createMachine<Context>(
     states: {
       [STATES.SEIGED]: {
         on: {
+          '': [{ target: STATES.PREPARING_TO_MOVE, cond: unitHasQueuedPath }],
           [ACTIONS.MOVE_TO]: {
             target: STATES.PREPARING_TO_MOVE,
             actions: ['prepareToMove'],
@@ -69,9 +72,9 @@ const fetchMachine = createMachine<Context>(
       [STATES.PREPARING_TO_SEIGE]: {
         on: {
           [ACTIONS.MOVE_TO]: {
-            // TODO: handle move commands when transitioning to seige mode
-            // target: [STATES.MOVING],
-            // actions: ['updateDestination'],
+            // This can be removed if we no longer want
+            // to queue move actions during this transition
+            actions: ['queueNewMove'],
           },
         },
         after: {
@@ -85,6 +88,9 @@ const fetchMachine = createMachine<Context>(
   },
   {
     actions: {
+      queueNewMove: (context, event) => {
+        console.log('queueing path', event.path);
+      },
       prepareToMove: (context, event) => {
         console.log('preparing to move from seiged position');
       },
@@ -107,29 +113,32 @@ const fetchMachine = createMachine<Context>(
 export function boundStateMachine(unit: Unit) {
   const boundMachine = fetchMachine.withContext({ unit }).withConfig({
     actions: {
+      queueNewMove: (context, event) => {
+        console.log(`### [${context.unit.id}]: queueing path`, event.path);
+        context.unit.queueNewPath(event.path as MapPath);
+      },
       prepareToMove: (context, event) => {
         console.log(
           `### [${context.unit.id}]: preparing to move from seiged position`
         );
-        console.assert(
-          context.unit._queuedPath === event.path,
-          `${unit.id} failed to set _queuedPath`
-        );
+        context.unit.queueNewPath(event.path as MapPath);
       },
       moveTo: (context, event) => {
         // no path pathload since it's emitted by the internal state transition,
         // use unit.activePath or just call unit.move()
         console.log(`### [${context.unit.id}]: moving to position`);
-        context.unit.move();
+        context.unit.startMovingToQueuedPath();
       },
       updateDestination: (context, event) => {
         console.log(
           `### [${context.unit.id}]: moving towards new position`,
-          (event.path as MapPath).at(-1)
+          (event.path as MapPath).at(-1),
+          'triggered by',
+          event.type,
+          'using path',
+          event.path
         );
-
-        context.unit._queuedPath = event.path as MapPath;
-        context.unit.move();
+        context.unit.overrideActivePath(event.path as MapPath);
       },
       prepareToSeige: (context, event) => {
         console.log(`### [${context.unit.id}]: preparing to be seiged`);

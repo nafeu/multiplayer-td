@@ -151,6 +151,8 @@ export class Game extends Phaser.Scene {
     placeUnit(100, 250);
   }
 
+  KEYS_TO_WATCH = ['SHIFT', 'CTRL'];
+
   update(time: number) {
     this.playerHUD.setText([
       `Units Available: ${
@@ -158,6 +160,19 @@ export class Game extends Phaser.Scene {
       }/${UNIT_SQUAD_SIZE}`,
       `Units Selected: ${entities.selectedUnitGroup.size()}`,
       `Formation: ${entities.interaction.formationShape}`,
+      // '',
+      // 'Keyboard Keys:',
+      // '---------------',
+      // ...this.KEYS_TO_WATCH.map(
+      //   (k) =>
+      //     `${k}: ${this.input.keyboard
+      //       .checkDown(this.input.keyboard.addKey(k))
+      //       .toString()}`
+      // ),
+      '',
+      'Units:',
+      '--------',
+      ...entities.unitGroup.getChildren().map((u: Unit) => u.toString()),
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
@@ -273,6 +288,12 @@ export class Game extends Phaser.Scene {
 
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
       });
+
+      const shiftKeyIsNotPressed = !(pointer.event as Phaser.Input.Keyboard.Key)
+        .shiftKey;
+      if (shiftKeyIsNotPressed) {
+        entities.selectedUnitGroup.clearUnits();
+      }
 
       selected.forEach(entities.selectedUnitGroup.addUnit);
 

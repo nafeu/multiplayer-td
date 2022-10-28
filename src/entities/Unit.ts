@@ -67,6 +67,25 @@ export class Unit extends Phaser.GameObjects.Image {
     );
   }
 
+  toString() {
+    const selected = entities.selectedUnitGroup.hasUnit(this) ? '*' : '';
+
+    let movingStatus = '';
+    const destination = this.activePath.at(-1);
+    if (this.isMoving() && destination) {
+      const destinationTile = getTileCoordinatesByPosition(
+        destination.x,
+        destination.y
+      );
+      movingStatus = ` -> (${destinationTile.i},${destinationTile.j})`;
+    }
+
+    const currentTile = getTileCoordinatesByPosition(this.x, this.y);
+    const currentState = this._machine.getSnapshot().value.toString();
+
+    return `${selected}${this.id} [${currentState}] (${currentTile.i}, ${currentTile.j})${movingStatus}`;
+  }
+
   destroy(fromScene?: boolean): void {
     this._machine.stop();
     super.destroy(fromScene);
@@ -246,11 +265,7 @@ export class Unit extends Phaser.GameObjects.Image {
     }
 
     if (keysDuringPointerEvent.shiftKey) {
-      const unitIsNotSelected = !entities.selectedUnitGroup.hasUnit(this);
-
-      if (unitIsNotSelected) {
-        entities.selectedUnitGroup.addUnit(this);
-      }
+      entities.selectedUnitGroup.toggleUnit(this);
     } else {
       entities.selectedUnitGroup.clearUnits();
       entities.selectedUnitGroup.addUnit(this);

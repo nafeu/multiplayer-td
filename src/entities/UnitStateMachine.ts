@@ -1,12 +1,15 @@
-import { createMachine, interpret } from 'xstate';
+import { AnyEventObject, createMachine, interpret } from 'xstate';
 import { UNIT_PREPARING_ANIMATION_DELAY_MS } from '../constants';
 import { MapPath } from '../map';
 
 import Unit from './Unit';
 
 // Use Visualizer for testing state machine
-// Copy and paste everything below this line
 // https://stately.ai/viz
+//
+// Copy and paste everything below this line
+// const UNIT_PREPARING_ANIMATION_DELAY_MS = 2000;
+// type Unit = {}
 
 interface Context {
   unit: Unit;
@@ -35,6 +38,49 @@ export const STATES = {
 };
 
 const unitHasQueuedPath = (context: Context) => context.unit.hasQueuedPath();
+
+const PLACEHOLDER_ACTIONS = {
+  queueNewMove: (context, event: AnyEventObject) => {
+    console.log('queueing path', event.path);
+  },
+  startNewQueuedMove: (context, event) => {
+    console.log('start on new queued path');
+  },
+  prepareToMove: (context, event) => {
+    console.log('preparing to move from seiged position');
+  },
+  queueTransitionToMove: (context, event) => {
+    console.log('queuing delayed transition using timer');
+    setTimeout(() => {
+      console.log(
+        '### please trigger the state transition using COMMIT_MOVE_TO action'
+      );
+    }, UNIT_PREPARING_ANIMATION_DELAY_MS);
+  },
+  startMovingToDestination: (context, event) => {
+    console.log('moving to position');
+  },
+  prepareToSeige: (context, event) => {
+    console.log('preparing to seiged');
+  },
+  queueTransitionToSeige: (context, event) => {
+    console.log('queuing delayed transition using timer');
+    setTimeout(() => {
+      console.log(
+        '### please trigger the state transition using COMMIT_SEIGE action'
+      );
+    }, UNIT_PREPARING_ANIMATION_DELAY_MS);
+  },
+  updateQueuedDestination: (context, event) => {
+    console.log('queueing new position');
+  },
+  updateDestination: (context, event) => {
+    console.log('moving towards new position');
+  },
+  transitionToSiege: (context, event) => {
+    console.log('transition to siege');
+  },
+};
 
 // Note: assumes all MOVE_TOs are valid
 const fetchMachine = createMachine<Context>(
@@ -68,7 +114,7 @@ const fetchMachine = createMachine<Context>(
           },
           [_PRIVATE_ACTIONS.COMMIT_MOVE_TO]: {
             target: STATES.MOVING,
-            actions: ['moveTo'],
+            actions: ['startMovingToDestination'],
           },
         },
       },
@@ -94,55 +140,14 @@ const fetchMachine = createMachine<Context>(
           },
           [_PRIVATE_ACTIONS.COMMIT_SEIGE]: {
             target: STATES.SEIGED,
-            actions: ['seiged'],
+            actions: ['transitionToSiege'],
           },
         },
       },
     },
   },
   {
-    actions: {
-      queueNewMove: (context, event) => {
-        console.log('queueing path', event.path);
-      },
-      startNewQueuedMove: (context, event) => {
-        console.log('start on new queued path');
-      },
-      prepareToMove: (context, event) => {
-        console.log('preparing to move from seiged position');
-      },
-      queueTransitionToMove: (context, event) => {
-        console.log('queuing delayed transition using timer');
-        setTimeout(() => {
-          console.log(
-            '### please trigger the state transition using COMMIT_MOVE_TO action'
-          );
-        }, UNIT_PREPARING_ANIMATION_DELAY_MS);
-      },
-      moveTo: (context, event) => {
-        console.log('moving to position');
-      },
-      prepareToSeige: (context, event) => {
-        console.log('preparing to seiged');
-      },
-      queueTransitionToSeige: (context, event) => {
-        console.log('queuing delayed transition using timer');
-        setTimeout(() => {
-          console.log(
-            '### please trigger the state transition using COMMIT_SEIGE action'
-          );
-        }, UNIT_PREPARING_ANIMATION_DELAY_MS);
-      },
-      updateQueuedDestination: (context, event) => {
-        console.log('queueing new position');
-      },
-      updateDestination: (context, event) => {
-        console.log('moving towards new position');
-      },
-      seiged: (context, event) => {
-        console.log('seiged');
-      },
-    },
+    actions: PLACEHOLDER_ACTIONS,
   }
 );
 
@@ -187,7 +192,7 @@ export function boundStateMachine(unit: Unit) {
           }
         );
       },
-      moveTo: (context, event) => {
+      startMovingToDestination: (context, event) => {
         // no path pathload since it's emitted by the internal state transition,
         // use unit.activePath or just call unit.move()
         console.log(
@@ -233,8 +238,8 @@ export function boundStateMachine(unit: Unit) {
           }
         );
       },
-      seiged: (context, event) => {
-        console.log(`### [${context.unit.id}]: seiged`);
+      transitionToSiege: (context, event) => {
+        console.log(`### [${context.unit.id}]: transition to siege`);
       },
     },
   });

@@ -101,3 +101,5 @@ export const AVAILABLE_FORMATIONS: {
 export const DEFAULT_FORMATION_SHAPE = 'auto';
 
 export const GRID_LINE_COLOR = 0x34495e;
+
+export const GLOBAL_KEYS__MENU_KEY = 'ESC';

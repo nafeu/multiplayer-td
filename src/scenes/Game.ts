@@ -9,6 +9,8 @@ import Pointer from '../entities/Pointer';
 import map from '../map';
 import entities from '../entities';
 
+import { title as PauseMenuScene } from './PauseMenu';
+
 import {
   isDebugMode,
   sendUiAlert,
@@ -31,8 +33,10 @@ import {
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
   GRID_LINE_COLOR,
+  GLOBAL_KEYS__MENU_KEY,
 } from '../constants';
 
+export const title = 'game';
 export class Game extends Phaser.Scene {
   finder: EasyStar.js;
   nextEnemy: number;
@@ -41,7 +45,7 @@ export class Game extends Phaser.Scene {
   selection: Phaser.GameObjects.Rectangle;
 
   constructor() {
-    super('main');
+    super(title);
   }
 
   preload() {
@@ -65,6 +69,11 @@ export class Game extends Phaser.Scene {
     disableBrowserRightClickMenu(this);
 
     this.selection = addSelectionRectangle(this);
+
+    this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
+      this.scene.pause();
+      this.scene.launch(PauseMenuScene);
+    });
 
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN as string,
@@ -413,5 +422,3 @@ function addSelectionRectangle(scene: Phaser.Scene) {
     SELECTION_RECTANGLE_OPACITY
   );
 }
-
-export default Game;

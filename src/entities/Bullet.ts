@@ -8,12 +8,22 @@ class Bullet extends Phaser.GameObjects.Image {
   lifespan: number;
   speed: number;
 
+  _damage: number;
+
   constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, BULLET_IMG_NAME);
     this.dx = 0;
     this.dy = 0;
     this.lifespan = 0;
     this.speed = Phaser.Math.GetSpeed(300, 1);
+  }
+
+  setDamage(damage: number) {
+    this._damage = damage;
+  }
+
+  getDamage() {
+    return this._damage;
   }
 
   fire(x: number, y: number, angle: number) {

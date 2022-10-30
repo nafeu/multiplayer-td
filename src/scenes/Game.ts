@@ -9,7 +9,7 @@ import Pointer from '../entities/Pointer';
 import map from '../map';
 import entities from '../entities';
 
-import { title as MenuScene } from './Menu';
+import { title as PauseMenuScene } from './PauseMenu';
 
 import {
   isDebugMode,
@@ -72,7 +72,7 @@ export class Game extends Phaser.Scene {
 
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
-      this.scene.launch(MenuScene);
+      this.scene.launch(PauseMenuScene);
     });
 
     this.input.on(

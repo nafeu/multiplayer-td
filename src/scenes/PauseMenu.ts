@@ -2,9 +2,9 @@ import { BOARD_HEIGHT, BOARD_WIDTH, GLOBAL_KEYS__MENU_KEY } from '../constants';
 import { isDebugMode } from '../utils';
 import { title as GameScene } from './Game';
 
-export const title = 'menu';
+export const title = 'pause-menu';
 
-export class Menu extends Phaser.Scene {
+export class PauseMenu extends Phaser.Scene {
   constructor() {
     super(title);
   }

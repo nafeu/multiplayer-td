@@ -18,6 +18,7 @@
   },
   "scripts": {
     "start": "bun dev",
+    "build": "vite build",
     "typecheck": "tsc --noemit",
     "lint": "./node_modules/.bin/eslint ."
   }

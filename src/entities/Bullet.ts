@@ -32,7 +32,8 @@ class Bullet extends Phaser.GameObjects.Image {
     this.setPosition(x, y);
     this.dx = Math.cos(angle);
     this.dy = Math.sin(angle);
-    this.lifespan = 300;
+    this.lifespan = 1000;
+    // TODO: lifespan should match range...for now just overshoot
   }
 
   update(time: number, delta: number) {

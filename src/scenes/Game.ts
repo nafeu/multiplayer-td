@@ -60,6 +60,45 @@ export class Game extends Phaser.Scene {
     );
   }
 
+  // changeColor() {
+  //   const originalTexture = this.textures.get('sprites');
+  //   const tankTexture = originalTexture.get('18.png');
+  //   // const source = originalTexture.getSourceImage();
+  //   // const frames = originalTexture.getFramesFromTextureSource(0, false);
+
+  //   const newTexture = this.textures.createCanvas(
+  //     'TankRed',
+  //     tankTexture.width,
+  //     tankTexture.height
+  //   );
+
+  //   const sourceImage = newTexture.getSourceImage() as HTMLCanvasElement;
+  //   const context = sourceImage.getContext('2d');
+
+  //   context.drawImage(source, 0, 0);
+
+  // var pixels = context.getImageData(0, 0, source.width, source.height);
+
+  // for (var i = 0; i < pixels.data.length / 4; i++) {
+  //   this.processPixel(pixels.data, i * 4);
+  // }
+
+  // context.putImageData(pixels, 0, 0);
+
+  // newTexture.refresh();
+
+  // for (const frame of frames) {
+  //   newTexture.add(
+  //     frame.name,
+  //     0,
+  //     frame.cutX,
+  //     frame.cutY,
+  //     frame.width,
+  //     frame.height
+  //   );
+  // }
+  // }
+
   create() {
     this.finder = new EasyStar.js();
 

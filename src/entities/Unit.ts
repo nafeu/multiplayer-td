@@ -13,6 +13,10 @@ import {
   UNIT_SELECTED_TILE_BORDER,
   UNIT_PREPARING_TINT,
   BULLET_DAMAGE,
+  UNIT_IMG_NAME__NORMAL,
+  UNIT_IMG_NAME__CHONKY,
+  UNIT_IMG_NAME__SPEEDY,
+  UNIT_IMG_NAME__SNIPEY,
 } from '../constants';
 import entities from '../entities';
 import map, { MapPath } from '../map';
@@ -52,8 +56,8 @@ export class Unit extends Phaser.GameObjects.Image {
 
   STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
 
-  constructor(scene: Scene) {
-    super(scene, 0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME);
+  constructor(scene: Scene, _spriteKey = UNIT_IMG_NAME__NORMAL) {
+    super(scene, 0, 0, SPRITE_ATLAS_NAME, _spriteKey);
 
     this.id = generateId('Unit');
 
@@ -381,31 +385,35 @@ function moveTowardsTarget(unit: Unit, delta: number) {
 }
 
 export class ChonkyUnit extends Unit {
+  // used to toggle burst mode; see #getFireRate
+  __fireRateToggle = true;
+
   constructor(scene: Scene) {
-    super(scene);
+    super(scene, UNIT_IMG_NAME__CHONKY);
   }
 
   getDamage() {
-    return BULLET_DAMAGE * 2;
+    return BULLET_DAMAGE * 4;
   }
 
   getFireRange() {
-    return UNIT_FIRE_RANGE / 2;
+    return (UNIT_FIRE_RANGE * 2) / 3;
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS / 2;
+    // TODO: different burst options, current only double-tap
+    this.__fireRateToggle = !this.__fireRateToggle;
+    return UNIT_FIRE_RATE_MS * (this.__fireRateToggle ? 1 : 2);
   }
 
   getMovementSpeed() {
-    // divide because it is rate of change
-    return this.speed * 2;
+    return this.speed / 4;
   }
 }
 
 export class SpeedyUnit extends Unit {
   constructor(scene: Scene) {
-    super(scene);
+    super(scene, UNIT_IMG_NAME__SPEEDY);
   }
 
   getDamage() {
@@ -417,18 +425,17 @@ export class SpeedyUnit extends Unit {
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS * 2;
+    return UNIT_FIRE_RATE_MS / 2;
   }
 
   getMovementSpeed() {
-    // divide because it is rate of change
-    return this.speed / 2;
+    return this.speed * 2;
   }
 }
 
 export class SnipeyUnit extends Unit {
   constructor(scene: Scene) {
-    super(scene);
+    super(scene, UNIT_IMG_NAME__SNIPEY);
   }
 
   getDamage() {
@@ -440,12 +447,11 @@ export class SnipeyUnit extends Unit {
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS / 6;
+    return UNIT_FIRE_RATE_MS * 6;
   }
 
   getMovementSpeed() {
-    // divide because it is rate of change
-    return this.speed * 2;
+    return this.speed / 2;
   }
 }
 

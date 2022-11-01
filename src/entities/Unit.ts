@@ -291,13 +291,6 @@ export class Unit extends Phaser.GameObjects.Image {
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
     const keysDuringPointerEvent = pointer.event as Phaser.Input.Keyboard.Key;
 
-    if (keysDuringPointerEvent.ctrlKey) {
-      this.destroy();
-      map.unitValid[this.tilePositionRow][this.tilePositionCol] =
-        VALID_UNIT_POSITION;
-      return;
-    }
-
     if (keysDuringPointerEvent.shiftKey) {
       entities.selectedUnitGroup.toggleUnit(this);
     } else {
@@ -463,3 +456,5 @@ export const UnitType = {
   CHONKY: ChonkyUnit,
   SNIPEY: SnipeyUnit,
 };
+
+export type UnitTypeOption = keyof typeof UnitType;

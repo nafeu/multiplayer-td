@@ -13,10 +13,12 @@
   "dependencies": {
     "easystarjs": "^0.4.4",
     "phaser": "^3.55.2",
+    "vite": "^3.2.1",
     "xstate": "^4.33.6"
   },
   "scripts": {
     "start": "bun dev",
+    "build": "vite build",
     "typecheck": "tsc --noemit",
     "lint": "./node_modules/.bin/eslint ."
   }

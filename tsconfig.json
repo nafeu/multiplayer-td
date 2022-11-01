@@ -4,18 +4,16 @@
     "lib": ["ESNext", "DOM"],
     "module": "esnext",
     "moduleResolution": "node",
-    // Typescript Compiler kept checking node_modules for library type issues,
-    // so I wanted to disable it, but I am not sure of the implications during development.
-    // Now I only run it when running the typechecker via package.json
-    // https://bobbyhadz.com/blog/typescript-disable-type-checking-node-modules
     "target": "esnext",
-    // "bun-types" is the important part
-    "types": ["bun-types", "Phaser"],
+    // "bun-types" is required for when using
+    // "types": ["bun-types", "Phaser"],
     "typeRoots": [
       "node_modules/@types",
+      "node_modules/bun-types/types",
       "node_module/phaser/types"
     ],
     "skipLibCheck": true
   },
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

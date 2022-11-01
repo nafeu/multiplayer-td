@@ -202,8 +202,9 @@ export class Game extends Phaser.Scene {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
-    const isHoldingCtrlKey = (pointer.event as Phaser.Input.Keyboard.Key)
-      .ctrlKey;
+    const isHoldingCtrlKey = (
+      pointer.event as unknown as Phaser.Input.Keyboard.Key
+    ).ctrlKey;
     if (isHoldingCtrlKey) {
       placeUnit(pointer.x, pointer.y);
       return;
@@ -298,8 +299,9 @@ export class Game extends Phaser.Scene {
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
       });
 
-      const shiftKeyIsNotPressed = !(pointer.event as Phaser.Input.Keyboard.Key)
-        .shiftKey;
+      const shiftKeyIsNotPressed = !(
+        pointer.event as unknown as Phaser.Input.Keyboard.Key
+      ).shiftKey;
       if (shiftKeyIsNotPressed) {
         entities.selectedUnitGroup.clearUnits();
       }

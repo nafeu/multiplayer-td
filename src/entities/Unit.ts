@@ -266,7 +266,8 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
-    const keysDuringPointerEvent = pointer.event as Phaser.Input.Keyboard.Key;
+    const keysDuringPointerEvent =
+      pointer.event as unknown as Phaser.Input.Keyboard.Key;
 
     if (keysDuringPointerEvent.ctrlKey) {
       this.destroy();

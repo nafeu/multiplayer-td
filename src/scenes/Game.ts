@@ -49,7 +49,16 @@ export class Game extends Phaser.Scene {
   }
 
   preload() {
-    this.load.path = 'public/';
+    // Why so convoluted?
+    // - Vite (our bundler) uses BASE_URL, but bun does not
+    // - bun prefers to use public/ dir for assets https://github.com/oven-sh/bun#using-bun-with-single-page-apps
+    //   however, Vite prefers to use actual directory structure to determine routing
+    //   (with a special case for public/ https://vitejs.dev/guide/assets.html#the-public-directory)
+
+    // tl;dr public is for bun (local dev) and BASE_URL is for Vite (bundled deployment using relative paths)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    this.load.path = import.meta.env?.BASE_URL ?? 'public/';
+
     this.load.atlas(
       SPRITE_ATLAS_NAME,
       'assets/spritesheet.png',

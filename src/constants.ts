@@ -7,6 +7,10 @@ export const SPRITE_SIZE = 32;
 export const SPRITE_ATLAS_NAME = 'sprites';
 
 export const TANK_IMG_NAME = '18.png';
+export const UNIT_IMG_NAME__NORMAL = '18.png';
+export const UNIT_IMG_NAME__SPEEDY = 'speedy.png';
+export const UNIT_IMG_NAME__CHONKY = 'chonky.png';
+export const UNIT_IMG_NAME__SNIPEY = 'snipey.png';
 export const BULLET_IMG_NAME = '17.png';
 export const ENEMY_IMG_NAME = '05.png';
 

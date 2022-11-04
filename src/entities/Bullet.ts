@@ -8,6 +8,8 @@ class Bullet extends Phaser.GameObjects.Image {
   lifespan: number;
   speed: number;
 
+  _damage: number;
+
   constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, BULLET_IMG_NAME);
     this.dx = 0;
@@ -16,13 +18,22 @@ class Bullet extends Phaser.GameObjects.Image {
     this.speed = Phaser.Math.GetSpeed(300, 1);
   }
 
+  setDamage(damage: number) {
+    this._damage = damage;
+  }
+
+  getDamage() {
+    return this._damage;
+  }
+
   fire(x: number, y: number, angle: number) {
     this.setActive(true);
     this.setVisible(true);
     this.setPosition(x, y);
     this.dx = Math.cos(angle);
     this.dy = Math.sin(angle);
-    this.lifespan = 300;
+    this.lifespan = 1000;
+    // TODO: lifespan should match range...for now just overshoot
   }
 
   update(time: number, delta: number) {

@@ -12,6 +12,11 @@ import {
   UNIT_MOVING_TINT,
   UNIT_SELECTED_TILE_BORDER,
   UNIT_PREPARING_TINT,
+  BULLET_DAMAGE,
+  UNIT_IMG_NAME__NORMAL,
+  UNIT_IMG_NAME__CHONKY,
+  UNIT_IMG_NAME__SPEEDY,
+  UNIT_IMG_NAME__SNIPEY,
 } from '../constants';
 import entities from '../entities';
 import map, { MapPath } from '../map';
@@ -51,10 +56,12 @@ export class Unit extends Phaser.GameObjects.Image {
 
   STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
 
-  constructor(scene: Scene) {
-    super(scene, 0, 0, SPRITE_ATLAS_NAME, TANK_IMG_NAME);
+  constructor(scene: Scene, _spriteKey = UNIT_IMG_NAME__NORMAL) {
+    super(scene, 0, 0, SPRITE_ATLAS_NAME, _spriteKey);
 
     this.id = generateId('Unit');
+
+    console.log('### NEW TANKY', this);
 
     this.target = new Phaser.Math.Vector2();
     this.speed = Phaser.Math.GetSpeed(100, 1);
@@ -73,6 +80,22 @@ export class Unit extends Phaser.GameObjects.Image {
       this.handlePointerDown,
       this
     );
+  }
+
+  getDamage() {
+    return BULLET_DAMAGE;
+  }
+
+  getFireRange() {
+    return UNIT_FIRE_RANGE;
+  }
+
+  getFireRate() {
+    return UNIT_FIRE_RATE_MS;
+  }
+
+  getMovementSpeed() {
+    return this.speed;
   }
 
   toString() {
@@ -116,11 +139,11 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   fire() {
-    const enemy = getEnemy(this.x, this.y, UNIT_FIRE_RANGE);
+    const enemy = getEnemy(this.x, this.y, this.getFireRange());
 
     if (enemy) {
       const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
-      addBullet(this.x, this.y, angle);
+      addBullet(this.x, this.y, angle, this);
       this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
     }
   }
@@ -253,7 +276,7 @@ export class Unit extends Phaser.GameObjects.Image {
 
       if (shouldShoot) {
         this.fire();
-        this.nextTick = time + UNIT_FIRE_RATE_MS;
+        this.nextTick = time + this.getFireRate();
       }
     } else if (this.isMoving()) {
       const isMovingToTarget =
@@ -269,13 +292,6 @@ export class Unit extends Phaser.GameObjects.Image {
     const keysDuringPointerEvent =
       pointer.event as unknown as Phaser.Input.Keyboard.Key;
 
-    if (keysDuringPointerEvent.ctrlKey) {
-      this.destroy();
-      map.unitValid[this.tilePositionRow][this.tilePositionCol] =
-        VALID_UNIT_POSITION;
-      return;
-    }
-
     if (keysDuringPointerEvent.shiftKey) {
       entities.selectedUnitGroup.toggleUnit(this);
     } else {
@@ -285,10 +301,11 @@ export class Unit extends Phaser.GameObjects.Image {
   };
 }
 
-function addBullet(x: number, y: number, angle: number) {
+function addBullet(x: number, y: number, angle: number, unit: Unit) {
   const bullet = entities.bullets.get() as Bullet | null;
 
   if (bullet) {
+    bullet.setDamage(unit.getDamage());
     bullet.fire(x, y, angle);
   }
 }
@@ -342,8 +359,8 @@ function moveTowardsTarget(unit: Unit, delta: number) {
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
 
-    unit.x += dx * unit.speed * delta;
-    unit.y += dy * unit.speed * delta;
+    unit.x += dx * unit.getMovementSpeed() * delta;
+    unit.y += dy * unit.getMovementSpeed() * delta;
 
     const distance = Phaser.Math.Distance.Between(
       unit.x,
@@ -361,4 +378,84 @@ function moveTowardsTarget(unit: Unit, delta: number) {
   }
 }
 
+export class ChonkyUnit extends Unit {
+  // used to toggle burst mode; see #getFireRate
+  __fireRateToggle = true;
+
+  constructor(scene: Scene) {
+    super(scene, UNIT_IMG_NAME__CHONKY);
+  }
+
+  getDamage() {
+    return BULLET_DAMAGE * 4;
+  }
+
+  getFireRange() {
+    return (UNIT_FIRE_RANGE * 2) / 3;
+  }
+
+  getFireRate() {
+    // TODO: different burst options, current only double-tap
+    this.__fireRateToggle = !this.__fireRateToggle;
+    return UNIT_FIRE_RATE_MS * (this.__fireRateToggle ? 1 : 2);
+  }
+
+  getMovementSpeed() {
+    return this.speed / 4;
+  }
+}
+
+export class SpeedyUnit extends Unit {
+  constructor(scene: Scene) {
+    super(scene, UNIT_IMG_NAME__SPEEDY);
+  }
+
+  getDamage() {
+    return BULLET_DAMAGE / 4;
+  }
+
+  getFireRange() {
+    return UNIT_FIRE_RANGE;
+  }
+
+  getFireRate() {
+    return UNIT_FIRE_RATE_MS / 2;
+  }
+
+  getMovementSpeed() {
+    return this.speed * 2;
+  }
+}
+
+export class SnipeyUnit extends Unit {
+  constructor(scene: Scene) {
+    super(scene, UNIT_IMG_NAME__SNIPEY);
+  }
+
+  getDamage() {
+    return BULLET_DAMAGE * 2;
+  }
+
+  getFireRange() {
+    return UNIT_FIRE_RANGE * 3;
+  }
+
+  getFireRate() {
+    return UNIT_FIRE_RATE_MS * 6;
+  }
+
+  getMovementSpeed() {
+    return this.speed / 2;
+  }
+}
+
 export default Unit;
+
+export const UnitType = {
+  NORMAL: Unit,
+  SPEEDY: SpeedyUnit,
+  CHONKY: ChonkyUnit,
+  SNIPEY: SnipeyUnit,
+};
+
+export type UnitTypeOption = keyof typeof UnitType;

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import EasyStar from 'easystarjs';
 
-import Unit from '../entities/Unit';
+import { Unit, UnitType } from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 import Pointer from '../entities/Pointer';
@@ -29,7 +29,6 @@ import {
   ENEMY_PATH_COLOR,
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
-  BULLET_DAMAGE,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
   GRID_LINE_COLOR,
@@ -165,8 +164,12 @@ export class Game extends Phaser.Scene {
       .setOrigin(1, 0);
 
     // Setup Default Units
-    placeUnit(70, 250);
-    placeUnit(100, 250);
+    // placeUnit(70, 250, UnitType.NORMAL);
+    // placeUnit(100, 250, UnitType.NORMAL);
+
+    Object.keys(UnitType).forEach((unitType, idx) => {
+      placeUnit(70 + idx * TILE_SIZE, 250, unitType as keyof typeof UnitType);
+    });
   }
 
   KEYS_TO_WATCH = ['SHIFT', 'CTRL'];
@@ -215,7 +218,7 @@ export class Game extends Phaser.Scene {
       pointer.event as unknown as Phaser.Input.Keyboard.Key
     ).ctrlKey;
     if (isHoldingCtrlKey) {
-      placeUnit(pointer.x, pointer.y);
+      sendUiAlert({ info: 'All your tanks are already on the field!' });
       return;
     }
 
@@ -387,18 +390,25 @@ function drawEnemyPath(
   return path;
 }
 
-function placeUnit(x: number, y: number) {
+function placeUnit(
+  x: number,
+  y: number,
+  type = 'NORMAL' as keyof typeof UnitType
+) {
   const row = Math.floor(y / TILE_SIZE);
   const column = Math.floor(x / TILE_SIZE);
 
   if (map.unitValid[row][column] === VALID_UNIT_POSITION) {
-    const unit = entities.unitGroup.get() as Unit;
+    const UnitConstructor = UnitType[type];
+    const unit = new UnitConstructor(entities.unitGroup.scene);
+    entities.unitGroup.add(unit);
+    entities.unitGroup.scene.add.existing(unit);
 
     if (unit) {
       unit.setActive(true);
       unit.setVisible(true);
       unit.place(row, column);
-      unit.setInteractive();
+      unit.setInteractive({ useHandCursor: true });
     }
   }
 }
@@ -410,7 +420,7 @@ function damageEnemy(enemy: Enemy, bullet: Bullet) {
     bullet.setActive(false);
     bullet.setVisible(false);
 
-    enemy.receiveDamage(BULLET_DAMAGE);
+    enemy.receiveDamage(bullet.getDamage());
   }
 }
 

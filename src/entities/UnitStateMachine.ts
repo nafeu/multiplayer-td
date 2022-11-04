@@ -1,7 +1,6 @@
 import { AnyEventObject, createMachine, interpret } from 'xstate';
 import { UNIT_PREPARING_ANIMATION_DELAY_MS } from '../constants';
 import { getLogger } from '../logger';
-import { MapPath } from '../map';
 
 import Unit from './Unit';
 

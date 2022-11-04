@@ -1,7 +1,5 @@
 import Phaser, { Scene } from 'phaser';
 
-import map from '../map';
-
 import HealthBar from './HealthBar';
 
 import { generateId } from '../utils';
@@ -19,11 +17,13 @@ class Enemy extends Phaser.GameObjects.Image {
   hp: number;
   healthBar: HealthBar;
   recycled: number;
+  enemyPath: Phaser.Curves.Path;
 
   constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
 
     this.id = generateId('Enemy');
+    this.enemyPath = scene.enemyPath;
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
@@ -59,7 +59,7 @@ class Enemy extends Phaser.GameObjects.Image {
     this.follower.t = 0;
 
     // get x and y of the given t point
-    map.path.getPoint(this.follower.t, this.follower.vec);
+    this.enemyPath.getPoint(this.follower.t, this.follower.vec);
 
     // set the x and y of our enemy to the received from the previous step
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
@@ -70,7 +70,7 @@ class Enemy extends Phaser.GameObjects.Image {
     this.follower.t += ENEMY_SPEED * delta;
 
     // get the new x and y coordinates in vec
-    map.path.getPoint(this.follower.t, this.follower.vec);
+    this.enemyPath.getPoint(this.follower.t, this.follower.vec);
 
     // update enemy x and y to the newly obtained x and y
     this.setPosition(this.follower.vec.x, this.follower.vec.y);

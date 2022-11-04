@@ -19,7 +19,6 @@ import {
 } from '../constants';
 import entities from '../entities';
 import { getLogger } from '../logger';
-import map, { MapPath } from '../map';
 import {
   generateId,
   getPositionByTile,
@@ -56,12 +55,15 @@ export class Unit extends Phaser.GameObjects.Image {
   tilePositionRow: number;
   tilePositionCol: number;
 
+  map: number[][];
+
   STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
 
   constructor(scene: Scene, _spriteKey = UNIT_IMG_NAME__NORMAL) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, _spriteKey);
 
     this.id = generateId('Unit');
+    this.map = scene.map;
 
     logger.log('### NEW TANKY', this);
 
@@ -136,7 +138,7 @@ export class Unit extends Phaser.GameObjects.Image {
     this.target.x = this.x;
     this.target.y = this.y;
 
-    map.unitValid[this.tilePositionRow][this.tilePositionCol] =
+    this.map[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
 
@@ -217,7 +219,7 @@ export class Unit extends Phaser.GameObjects.Image {
     const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
 
     // mark current tile as vacant
-    map.unitValid[this.tilePositionRow][this.tilePositionCol] =
+    this.map[this.tilePositionRow][this.tilePositionCol] =
       VALID_UNIT_POSITION;
 
     this.tilePositionRow = tilePositionRow;
@@ -235,7 +237,7 @@ export class Unit extends Phaser.GameObjects.Image {
     this._queuedPath = [];
 
     // mark final tile as occupied
-    map.unitValid[this.tilePositionRow][this.tilePositionCol] =
+    this.map[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
 

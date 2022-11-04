@@ -38,6 +38,12 @@ cp -R hooks/ .git/hooks/
 chmod ug+x .git/hooks/*
 ```
 
+## Level Editing
+
+Install [Tiled Editor](https://www.mapeditor.org/)
+
+Open the `tilemaps.tile-project` file in Tiled, make edits to the map file and always export as a `.tmj` file into `public/assets/[LEVEL_NAME].tmj`
+
 ## Resources
 
 #### Spritesheets

@@ -1,6 +1,8 @@
 import { BOARD_HEIGHT, BOARD_WIDTH, GLOBAL_KEYS__MENU_KEY } from '../constants';
-import { isDebugMode } from '../utils';
+import { getLogger } from '../logger';
 import { title as GameScene } from './Game';
+
+const logger = getLogger('PAUSE_MENU');
 
 export const title = 'pause-menu';
 
@@ -40,7 +42,7 @@ export class PauseMenu extends Phaser.Scene {
   }
 
   handleToggleMenu = () => {
-    isDebugMode && console.log('### MENU:', 'unpausing...');
+    logger.log('### MENU:', 'unpausing...');
     this.scene.stop();
     this.scene.resume(GameScene);
   };

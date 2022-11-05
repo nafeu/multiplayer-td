@@ -2,7 +2,6 @@ import Phaser, { Scene } from 'phaser';
 
 import {
   SPRITE_ATLAS_NAME,
-  TANK_IMG_NAME,
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   TILE_SIZE,
@@ -19,6 +18,7 @@ import {
   UNIT_IMG_NAME__SNIPEY,
 } from '../constants';
 import entities from '../entities';
+import { getLogger } from '../logger';
 import map, { MapPath } from '../map';
 import {
   generateId,
@@ -29,6 +29,8 @@ import Bullet from './Bullet';
 import Enemy from './Enemy';
 import { TileHighlight } from './TileHighlight';
 import { ACTIONS, STATES, boundStateMachine } from './UnitStateMachine';
+
+const logger = getLogger('UNIT_ENTITY');
 
 export class Unit extends Phaser.GameObjects.Image {
   id: string;
@@ -61,7 +63,7 @@ export class Unit extends Phaser.GameObjects.Image {
 
     this.id = generateId('Unit');
 
-    console.log('### NEW TANKY', this);
+    logger.log('### NEW TANKY', this);
 
     this.target = new Phaser.Math.Vector2();
     this.speed = Phaser.Math.GetSpeed(100, 1);

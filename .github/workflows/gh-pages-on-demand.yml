@@ -32,3 +32,15 @@ jobs:
         with:
           folder: dist # The folder the action should deploy.
           target-folder: hash/${{ github.sha }}
+
+      - uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # context object is supplied by the github-script action
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 deployed to https://nafeu.com/${{ context.repo.repo }}/hash/${{ context.sha }}/'
+            })

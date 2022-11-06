@@ -1,0 +1,31 @@
+name: Build and Deploy
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    if: github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Setup Bun Runtime
+        uses: antongolub/action-setup-bun@v1 # or @v1.x.x
+
+      - name: Install and Build 🔧
+        run: |
+          bun install
+          cp public/index.html ./index.html
+          bun run build
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # The folder the action should deploy.
+          target-folder: hash/${{ github.sha }}

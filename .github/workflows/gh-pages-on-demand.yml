@@ -34,7 +34,9 @@ jobs:
               repo,
               pull_number: number,
             });
-            return pr.data.head.sha
+            console.log('PR:', pr);
+            console.log('PR Data:', pr.data);
+            return pr.data.head.sha;
 
       - name: Checkout 🛎️
         uses: actions/checkout@v3

@@ -2,9 +2,6 @@ name: Build and Deploy
 on:
   issue_comment:
     types: [created]
-  # push:
-  #   branches:
-  #     - deploy-hashes
 
 permissions:
   contents: write # for writing to gh-pages branch
@@ -13,7 +10,7 @@ permissions:
 
 jobs:
   build-and-deploy:
-    if: github.event.issue.pull_request #&& github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
+    if: github.event.issue.pull_request && github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
     steps:
@@ -34,8 +31,6 @@ jobs:
               repo,
               pull_number: number,
             });
-            console.log('PR:', pr);
-            console.log('PR Data:', pr.data);
             return pr.data.head.sha;
 
       - name: Checkout 🛎️
@@ -68,5 +63,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `👋 deployed to https://nafeu.com/${context.repo.repo}/hash/${{ steps.branch-sha.outputs.result }}/`
+              body: `👋 deployed to https://nafeu.com/${context.repo.repo}/hash/${{ steps.branch-sha.outputs.result }}/\n` +
+                    `But give the gh-pages job a couple of minutes...\n` +
+                    `Verify the hash is committed here: https://github.com/nafeu/multiplayer-td/tree/gh-pages/hash/${{ steps.branch-sha.outputs.result }}`
             })

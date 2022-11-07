@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write # for writing to gh-pages branch
   issues: write # for the success comment in PR
+  pull-requests: write # ^
 
 jobs:
   build-and-deploy:
@@ -65,5 +66,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `👋 deployed to https://nafeu.com/${context.repo.repo}/hash/${context.sha}/`
+              body: `👋 deployed to https://nafeu.com/${context.repo.repo}/hash/${{ steps.branch-sha.outputs.result }}/`
             })

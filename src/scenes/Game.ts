@@ -34,6 +34,7 @@ import {
   GRID_LINE_COLOR,
   GLOBAL_KEYS__MENU_KEY,
 } from '../constants';
+import { getLoggingConfig } from '../logger';
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
@@ -120,8 +121,7 @@ export class Game extends Phaser.Scene {
       maxSize: UNIT_SQUAD_SIZE,
       // use createCallback to pass the scene for post initialization stuff
       createCallback: function (unit: Unit) {
-        console.log('### Unit Created', unit.id, unit);
-
+        // console.log('### Unit Created', unit.id, unit);
         // unit.postInitialize(map, getEnemy, () => entities.bullets.get());
       },
     });
@@ -174,6 +174,36 @@ export class Game extends Phaser.Scene {
 
   KEYS_TO_WATCH = ['SHIFT', 'CTRL'];
 
+  _getKeyboardCtrlStatusDebugLines() {
+    if (getLoggingConfig('DEBUG_HUD__KEYBOARD_STATUS')) {
+      return [
+        '',
+        'Keyboard Keys:',
+        '---------------',
+        ...this.KEYS_TO_WATCH.map(
+          (k) =>
+            `${k}: ${this.input.keyboard
+              .checkDown(this.input.keyboard.addKey(k))
+              .toString()}`
+        ),
+      ];
+    }
+
+    return [];
+  }
+
+  _getUnitStatusDebugLines() {
+    if (getLoggingConfig('DEBUG_HUD__UNIT_STATUS')) {
+      return [
+        '',
+        'Units:',
+        '--------',
+        ...entities.unitGroup.getChildren().map((u: Unit) => u.toString()),
+      ];
+    }
+    return [];
+  }
+
   update(time: number) {
     this.playerHUD.setText([
       `Units Available: ${
@@ -181,19 +211,8 @@ export class Game extends Phaser.Scene {
       }/${UNIT_SQUAD_SIZE}`,
       `Units Selected: ${entities.selectedUnitGroup.size()}`,
       `Formation: ${entities.interaction.formationShape}`,
-      // '',
-      // 'Keyboard Keys:',
-      // '---------------',
-      // ...this.KEYS_TO_WATCH.map(
-      //   (k) =>
-      //     `${k}: ${this.input.keyboard
-      //       .checkDown(this.input.keyboard.addKey(k))
-      //       .toString()}`
-      // ),
-      '',
-      'Units:',
-      '--------',
-      ...entities.unitGroup.getChildren().map((u: Unit) => u.toString()),
+      ...this._getKeyboardCtrlStatusDebugLines(),
+      ...this._getUnitStatusDebugLines(),
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
@@ -250,7 +269,6 @@ export class Game extends Phaser.Scene {
               validMove.i,
               (path) => {
                 if (path) {
-                  console.log('### Path Found: ', path);
                   selectedUnit.queueMove(path);
                 } else {
                   sendUiAlert({ invalidCommand: `Path not found.` });

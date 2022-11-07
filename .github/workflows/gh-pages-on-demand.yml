@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-and-deploy:
-    if: github.event.issue.pull_request && github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
+    if: github.event.issue.pull_request && github.event.comment.body == 'deploy' # only run if comment on PR says "deploy"
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
     steps:

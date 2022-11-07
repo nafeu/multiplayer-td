@@ -2,9 +2,9 @@ name: Build and Deploy
 on:
   issue_comment:
     types: [created]
-  push:
-    branches:
-      - deploy-hashes
+  # push:
+  #   branches:
+  #     - deploy-hashes
 
 permissions:
   contents: write
@@ -20,8 +20,14 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
+      - name: Dump tip of branch SHA
+        id: branch-sha
+        run: echo "${{ github.sha }}"
+
       - name: Checkout 🛎️
         uses: actions/checkout@v3
+        # with:
+        #   ref: ${{ steps.branch-sha.outputs.result }}
 
       - name: Setup Bun Runtime
         uses: antongolub/action-setup-bun@v1 # or @v1.x.x

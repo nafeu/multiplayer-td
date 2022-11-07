@@ -21,7 +21,7 @@ jobs:
 
       - name: Get PR branch SHA
         id: branch-sha
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
           result-encoding: string
           script: |
@@ -53,10 +53,10 @@ jobs:
           folder: dist # The folder the action should deploy.
           target-folder: hash/${{ steps.branch-sha.outputs.result }}
           clean-exclude: |
-            hash
+            ./hash
 
       - name: Comment on PR with gh-pages URL
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # context object is supplied by the github-script action

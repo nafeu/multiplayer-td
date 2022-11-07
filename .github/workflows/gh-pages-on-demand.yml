@@ -52,7 +52,8 @@ jobs:
         with:
           folder: dist # The folder the action should deploy.
           target-folder: hash/${{ steps.branch-sha.outputs.result }}
-          clean-exclude: ['hash']
+          clean-exclude: |
+            hash
 
       - name: Comment on PR with gh-pages URL
         uses: actions/github-script@v5

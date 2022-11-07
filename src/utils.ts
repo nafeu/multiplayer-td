@@ -3,8 +3,8 @@ import {
   VALID_UNIT_POSITION,
   AVAILABLE_FORMATIONS,
   OCCUPIED_UNIT_POSITION,
+  UNIT_CROSSING
 } from './constants';
-import map from './map';
 import entities from './entities';
 import Unit from './entities/Unit';
 
@@ -30,6 +30,10 @@ export const generateId = (key: string) => {
   return `${key}:${ID_MAP[key]}`;
 };
 
+/*
+  TODO: Remove this and utilize tilemaps built-in
+        "get tile coordinate by position" func
+*/
 export const getTileCoordinatesByPosition = (
   x: number,
   y: number
@@ -52,7 +56,8 @@ export const sendUiAlert = (alertInfo: unknown) => {
 export const getValidUnitFormation = (
   x: number,
   y: number,
-  units: readonly Unit[]
+  units: readonly Unit[],
+  map: number[][]
 ): Array<TileCoordinates> => {
   const { i, j } = getTileCoordinatesByPosition(x, y);
 
@@ -80,13 +85,13 @@ export const getValidUnitFormation = (
     const spotRow = spots[spotIndex].j;
 
     const hasColumnOption =
-      spotColumn >= 0 && map.unitValid.length > spotColumn;
-    const hasRowOption = spotRow >= 0 && map.unitValid[0].length > spotRow;
+      spotColumn >= 0 && map.length > spotColumn;
+    const hasRowOption = spotRow >= 0 && map[0].length > spotRow;
 
     const isValidPlacement =
       hasColumnOption &&
       hasRowOption &&
-      map.unitValid[spotColumn][spotRow] === VALID_UNIT_POSITION;
+      map[spotColumn][spotRow] === VALID_UNIT_POSITION;
 
     const selectedUnitAlreadyHere =
       unitTilePosition.i === spotColumn && unitTilePosition.j === spotRow;
@@ -114,8 +119,9 @@ export const rotateFormationShape = () => {
   }
 };
 
-export const isTileFreeAtPosition = (x: number, y: number) => {
+export const isTileFreeAtPosition = (x: number, y: number, map: number[][]) => {
   const { i: row, j: col } = getTileCoordinatesByPosition(x, y);
 
-  return map.unitValid[row][col] !== OCCUPIED_UNIT_POSITION;
+  return map[row][col] !== OCCUPIED_UNIT_POSITION
+    && map[row][col] !== UNIT_CROSSING;
 };

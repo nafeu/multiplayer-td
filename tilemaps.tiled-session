@@ -1,0 +1,54 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "public/assets/level-0.tmx",
+    "expandedProjectPaths": [
+        "public",
+        ".",
+        "public/assets"
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "#grass-biome": {
+            "scaleInEditor": 1
+        },
+        "public/assets/grass-biome.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "public/assets/level-0.tmx": {
+            "scale": 0.89359375,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 640.6714460570031,
+                "y": 274.733344990383
+            }
+        },
+        "public/assets/level-0.tmx#grass-biome": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "/Users/nafeu/Development/github/multiplayer-td/public/assets",
+    "last.imagePath": "/Users/nafeu/Development/github/multiplayer-td/public/assets",
+    "map.height": 16,
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 20,
+    "openFiles": [
+        "public/assets/level-0.tmx"
+    ],
+    "project": "tilemaps.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "public/assets/level-0.tmx",
+        "public/assets/grass-biome.tsx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.lastUsedFormat": "tsx"
+}

@@ -6,7 +6,6 @@ import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 import Pointer from '../entities/Pointer';
 
-import map from '../map';
 import entities from '../entities';
 
 import { title as PauseMenuScene } from './PauseMenu';
@@ -26,13 +25,13 @@ import {
   TILE_SIZE,
   UNIT_SQUAD_SIZE,
   ENEMY_SPAWN_RATE_MS,
-  ENEMY_PATH_COLOR,
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
-  GRID_LINE_COLOR,
   GLOBAL_KEYS__MENU_KEY,
+  UNIT_CROSSING,
+  INVALID_TURRENT_POSITION
 } from '../constants';
 import { getLoggingConfig } from '../logger';
 
@@ -43,6 +42,10 @@ export class Game extends Phaser.Scene {
   playerHUD: Phaser.GameObjects.Text;
   pointer: Phaser.GameObjects.GameObject;
   selection: Phaser.GameObjects.Rectangle;
+  tilemap: Phaser.Tilemaps.Tilemap;
+  tileset: Phaser.Tilemaps.Tileset;
+  enemyPath: Phaser.Curves.Path;
+  map: number[][];
 
   constructor() {
     super(title);
@@ -68,16 +71,17 @@ export class Game extends Phaser.Scene {
       */
       'assets/spritesheet.json.text'
     );
+    // load the PNG file
+    this.load.image('grass-biome', 'assets/grass-biome.png')
+
+    // load the JSON file
+    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj')
   }
 
   create() {
     this.finder = new EasyStar.js();
 
-    configurePathFindingGrid(this.finder);
-
     disableBrowserRightClickMenu(this);
-
-    this.selection = addSelectionRectangle(this);
 
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
@@ -105,15 +109,29 @@ export class Game extends Phaser.Scene {
       this
     );
 
+    this.enemyPath = drawLegacyEnemyPath(this);
+
+    this.tilemap = this.make.tilemap({ key: 'level-0' })
+    this.tileset = this.tilemap.addTilesetImage('grass-biome')
+    this.tilemap.createLayer('Below Player', this.tileset)
+
+    const newMapGrid = this.tilemap.getLayer('Below Player').data.map(row => row.map(col => {
+      if (col.properties.collision || col.properties.enemyPath) {
+        return INVALID_TURRENT_POSITION;
+      }
+
+      if (col.properties.crossing) {
+        return UNIT_CROSSING;
+      }
+
+      return VALID_UNIT_POSITION;
+    }))
+
+    this.map = newMapGrid
+
+    configurePathFindingGrid(this.finder, this.map);
     entities.pointer = new Pointer(this, this.add.graphics());
-
-    map.graphics = this.add.graphics();
-
-    if (isDebugMode) {
-      drawGrid(map.graphics);
-    }
-
-    map.path = drawEnemyPath(this, map.graphics);
+    this.selection = addSelectionRectangle(this);
 
     entities.unitGroup = this.add.group({
       classType: Unit,
@@ -168,7 +186,7 @@ export class Game extends Phaser.Scene {
     // placeUnit(100, 250, UnitType.NORMAL);
 
     Object.keys(UnitType).forEach((unitType, idx) => {
-      placeUnit(70 + idx * TILE_SIZE, 250, unitType as keyof typeof UnitType);
+      placeUnit(70 + idx * TILE_SIZE, 250, unitType as keyof typeof UnitType, this.map);
     });
   }
 
@@ -245,14 +263,15 @@ export class Game extends Phaser.Scene {
       const validUnitFormation = getValidUnitFormation(
         pointer.x,
         pointer.y,
-        entities.selectedUnitGroup.getUnits()
+        entities.selectedUnitGroup.getUnits(),
+        this.map
       );
 
       const selectedUnitCount = entities.selectedUnitGroup.size();
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-      if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y)) {
-        this.finder.setGrid(map.unitValid);
+      if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y, this.map)) {
+        this.finder.setGrid(this.map);
 
         entities.selectedUnitGroup
           .getUnits()
@@ -361,28 +380,7 @@ export class Game extends Phaser.Scene {
   };
 }
 
-function drawGrid(graphics: Phaser.GameObjects.Graphics) {
-  const lineWidth = 2;
-  const halfWidth = Math.floor(lineWidth / 2);
-  graphics.lineStyle(2, GRID_LINE_COLOR, 0.5);
-
-  for (let i = 0; i < Math.floor(BOARD_HEIGHT / TILE_SIZE); i++) {
-    graphics.moveTo(0, i * TILE_SIZE - halfWidth);
-    graphics.lineTo(BOARD_WIDTH, i * TILE_SIZE - halfWidth);
-  }
-
-  for (let j = 0; j < Math.floor(BOARD_WIDTH / TILE_SIZE); j++) {
-    graphics.moveTo(j * TILE_SIZE - halfWidth, 0);
-    graphics.lineTo(j * TILE_SIZE - halfWidth, BOARD_HEIGHT);
-  }
-
-  graphics.strokePath();
-}
-
-function drawEnemyPath(
-  scene: Phaser.Scene,
-  graphics: Phaser.GameObjects.Graphics
-) {
+function drawLegacyEnemyPath(scene: Phaser.Scene): Phaser.Curves.Path {
   const HALF_TILE = TILE_SIZE / 2;
   const lineWidth = 2;
   const lineOffset = lineWidth / 2;
@@ -401,22 +399,19 @@ function drawEnemyPath(
   );
   path.lineTo(15 * TILE_SIZE - HALF_TILE - lineOffset, BOARD_HEIGHT);
 
-  graphics.lineStyle(lineWidth, ENEMY_PATH_COLOR, 1);
-
-  path.draw(graphics);
-
   return path;
 }
 
 function placeUnit(
   x: number,
   y: number,
-  type = 'NORMAL' as keyof typeof UnitType
+  type = 'NORMAL' as keyof typeof UnitType,
+  map: number[][],
 ) {
   const row = Math.floor(y / TILE_SIZE);
   const column = Math.floor(x / TILE_SIZE);
 
-  if (map.unitValid[row][column] === VALID_UNIT_POSITION) {
+  if (map[row][column] === VALID_UNIT_POSITION) {
     const UnitConstructor = UnitType[type];
     const unit = new UnitConstructor(entities.unitGroup.scene);
     entities.unitGroup.add(unit);
@@ -446,9 +441,13 @@ function disableBrowserRightClickMenu(scene: Phaser.Scene) {
   scene.input.mouse.disableContextMenu();
 }
 
-function configurePathFindingGrid(finder: EasyStar.js) {
-  finder.setGrid(map.unitValid);
-  finder.setAcceptableTiles([VALID_UNIT_POSITION, OCCUPIED_UNIT_POSITION]);
+function configurePathFindingGrid(finder: EasyStar.js, map: number[][]) {
+  finder.setGrid(map);
+  finder.setAcceptableTiles([
+    VALID_UNIT_POSITION,
+    OCCUPIED_UNIT_POSITION,
+    UNIT_CROSSING
+  ]);
 }
 
 function addSelectionRectangle(scene: Phaser.Scene) {
@@ -461,3 +460,10 @@ function addSelectionRectangle(scene: Phaser.Scene) {
     SELECTION_RECTANGLE_OPACITY
   );
 }
+
+export type MapPath = Array<{ x: number; y: number }>;
+
+export type TileCoordinates = {
+  i: number;
+  j: number;
+};

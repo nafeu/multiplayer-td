@@ -20,9 +20,12 @@ class Pointer extends Phaser.GameObjects.GameObject {
   indicator: Phaser.GameObjects.Graphics;
   x: number;
   y: number;
+  map: number[][];
 
   constructor(scene: Scene, graphics: Phaser.GameObjects.Graphics) {
     super(scene, 'Pointer');
+
+    this.map = scene.map;
 
     this.indicator = graphics;
     scene.input.on(
@@ -47,12 +50,13 @@ class Pointer extends Phaser.GameObjects.GameObject {
       const validUnitFormation = getValidUnitFormation(
         this.x,
         this.y,
-        entities.selectedUnitGroup.getUnits()
+        entities.selectedUnitGroup.getUnits(),
+        this.map
       );
 
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-      if (hasSpaceForUnits && isTileFreeAtPosition(this.x, this.y)) {
+      if (hasSpaceForUnits && isTileFreeAtPosition(this.x, this.y, this.map)) {
         this.indicator.fillStyle(
           INDICATOR_VALID_SELECTION_COLOR,
           INDICATOR_OPACITY

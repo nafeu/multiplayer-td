@@ -7,7 +7,8 @@ on:
   #     - deploy-hashes
 
 permissions:
-  contents: write
+  contents: write # for writing to gh-pages branch
+  issues: write # for the success comment in PR
 
 jobs:
   build-and-deploy:
@@ -48,13 +49,14 @@ jobs:
           cp public/index.html ./index.html
           bun run build
 
-      - name: Deploy 🚀
+      - name: Deploy hash to gh-pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist # The folder the action should deploy.
           target-folder: hash/${{ steps.branch-sha.outputs.result }}
 
-      - uses: actions/github-script@v5
+      - name: Comment on PR with gh-pages URL
+        uses: actions/github-script@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # context object is supplied by the github-script action

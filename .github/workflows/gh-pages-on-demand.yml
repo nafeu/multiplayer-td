@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-and-deploy:
-    # if: github.event.issue.pull_request && github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
+    if: github.event.issue.pull_request #&& github.event.issue.comment == 'deploy' # only run if comment on PR says "deploy"
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
     steps:
@@ -20,14 +20,24 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Dump tip of branch SHA
+      - name: Get PR branch SHA
         id: branch-sha
-        run: echo "${{ github.sha }}"
+        uses: actions/github-script@v4
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo, number } = context.issue;
+            const pr = await github.pulls.get({
+              owner,
+              repo,
+              pull_number: number,
+            });
+            return pr.data.head.sha
 
       - name: Checkout 🛎️
         uses: actions/checkout@v3
-        # with:
-        #   ref: ${{ steps.branch-sha.outputs.result }}
+        with:
+          ref: ${{ steps.branch-sha.outputs.result }}
 
       - name: Setup Bun Runtime
         uses: antongolub/action-setup-bun@v1 # or @v1.x.x
@@ -42,7 +52,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist # The folder the action should deploy.
-          target-folder: hash/${{ github.sha }}
+          target-folder: hash/${{ steps.branch-sha.outputs.result }}
 
       - uses: actions/github-script@v5
         with:

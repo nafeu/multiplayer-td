@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-const LOGGING_CONFIG = {
+const isLoggingDisabledByDefault = window.location.search.includes('logs=off');
+
+const DEFAULT_LOG_CONFIG = {
   _ENABLE_ALL: false,
   DEBUG_HUD__KEYBOARD_STATUS: false,
   DEBUG_HUD__UNIT_STATUS: true,
@@ -7,8 +9,22 @@ const LOGGING_CONFIG = {
   UNIT_STATE_MACHINE: true,
   UNIT_ENTITY: true,
   PAUSE_MENU: false,
-  POINTER_UI_DEBUG: true,
+  POINTER_UI_DEBUG: true
 };
+
+const DISABLED_LOG_CONFIG = {
+  _ENABLE_ALL: false,
+  DEBUG_HUD__KEYBOARD_STATUS: false,
+  DEBUG_HUD__UNIT_STATUS: false,
+  GENERIC_DEBUG: false,
+  UNIT_STATE_MACHINE: false,
+  UNIT_ENTITY: false,
+  PAUSE_MENU: false,
+  POINTER_UI_DEBUG: false
+}
+
+const LOGGING_CONFIG = isLoggingDisabledByDefault ?
+  DISABLED_LOG_CONFIG : DEFAULT_LOG_CONFIG
 
 export const LOGGING_KEYS_ALL = Object.keys(LOGGING_CONFIG);
 

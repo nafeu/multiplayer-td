@@ -11,7 +11,6 @@ import entities from '../entities';
 import { title as PauseMenuScene } from './PauseMenu';
 
 import {
-  isDebugMode,
   sendUiAlert,
   getValidUnitFormation,
   rotateFormationShape,

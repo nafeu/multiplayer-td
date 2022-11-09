@@ -11,8 +11,7 @@ import {
 import {
   getTileRowColBySceneXY,
   getValidUnitFormation,
-  isTileFreeAtPosition,
-  isDebugMode,
+  isTileFreeAtPosition
 } from '../utils';
 
 import entities from '../entities';
@@ -53,8 +52,6 @@ class Pointer extends Phaser.GameObjects.GameObject {
   }
 
   update() {
-    if (!isDebugMode) return;
-
     this.indicator.clear();
 
     const selectedUnitCount = entities.selectedUnitGroup.size();

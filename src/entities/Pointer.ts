@@ -1,4 +1,5 @@
-import Phaser, { Scene } from 'phaser';
+import Phaser from 'phaser';
+import { Game } from '../scenes/Game';
 
 import {
   TILE_SIZE,
@@ -22,7 +23,7 @@ class Pointer extends Phaser.GameObjects.GameObject {
   y: number;
   map: number[][];
 
-  constructor(scene: Scene, graphics: Phaser.GameObjects.Graphics) {
+  constructor(scene: Game, graphics: Phaser.GameObjects.Graphics) {
     super(scene, 'Pointer');
 
     this.map = scene.map;

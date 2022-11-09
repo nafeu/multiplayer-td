@@ -1,4 +1,5 @@
-import Phaser, { Scene } from 'phaser';
+import Phaser from 'phaser';
+import { Game } from '../scenes/Game';
 
 import HealthBar from './HealthBar';
 
@@ -19,7 +20,7 @@ class Enemy extends Phaser.GameObjects.Image {
   recycled: number;
   enemyPath: Phaser.Curves.Path;
 
-  constructor(scene: Scene) {
+  constructor(scene: Game) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
 
     this.id = generateId('Enemy');

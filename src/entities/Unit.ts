@@ -1,4 +1,5 @@
-import Phaser, { Scene } from 'phaser';
+import Phaser from 'phaser';
+import { Game } from '../scenes/Game';
 
 import {
   SPRITE_ATLAS_NAME,
@@ -59,7 +60,7 @@ export class Unit extends Phaser.GameObjects.Image {
 
   STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
 
-  constructor(scene: Scene, _spriteKey = UNIT_IMG_NAME__NORMAL) {
+  constructor(scene: Game, _spriteKey = UNIT_IMG_NAME__NORMAL) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, _spriteKey);
 
     this.id = generateId('Unit');
@@ -386,7 +387,7 @@ export class ChonkyUnit extends Unit {
   // used to toggle burst mode; see #getFireRate
   __fireRateToggle = true;
 
-  constructor(scene: Scene) {
+  constructor(scene: Game) {
     super(scene, UNIT_IMG_NAME__CHONKY);
   }
 
@@ -410,7 +411,7 @@ export class ChonkyUnit extends Unit {
 }
 
 export class SpeedyUnit extends Unit {
-  constructor(scene: Scene) {
+  constructor(scene: Game) {
     super(scene, UNIT_IMG_NAME__SPEEDY);
   }
 
@@ -432,7 +433,7 @@ export class SpeedyUnit extends Unit {
 }
 
 export class SnipeyUnit extends Unit {
-  constructor(scene: Scene) {
+  constructor(scene: Game) {
     super(scene, UNIT_IMG_NAME__SNIPEY);
   }
 

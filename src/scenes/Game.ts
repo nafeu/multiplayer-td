@@ -60,6 +60,8 @@ export class Game extends Phaser.Scene {
 
     // tl;dr public is for bun (local dev) and BASE_URL is for Vite (bundled deployment using relative paths)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore: Unreachable code error
     this.load.path = import.meta.env?.BASE_URL ?? 'public/';
 
     this.load.atlas(
@@ -413,7 +415,7 @@ function placeUnit(
 
   if (map[row][column] === VALID_UNIT_POSITION) {
     const UnitConstructor = UnitType[type];
-    const unit = new UnitConstructor(entities.unitGroup.scene);
+    const unit = new UnitConstructor(entities.unitGroup.scene as Game);
     entities.unitGroup.add(unit);
     entities.unitGroup.scene.add.existing(unit);
 

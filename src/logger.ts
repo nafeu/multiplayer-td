@@ -24,6 +24,11 @@ export function setLoggingConfig(key: LOGGING_KEYS, value: boolean) {
 export function getLogger(key: LOGGING_KEYS) {
   return new Proxy(
     {
+      assert: (...args: any[]) => {
+        if (LOGGING_CONFIG._ENABLE_ALL || LOGGING_CONFIG[key]) {
+          console.assert(...args);
+        }
+      },
       log: (...args: any[]) => {
         if (LOGGING_CONFIG._ENABLE_ALL || LOGGING_CONFIG[key]) {
           console.log(...args);

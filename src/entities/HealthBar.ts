@@ -39,11 +39,15 @@ class HealthBar {
 
   setHealth(currentValue: number) {
     this.currentValue = currentValue;
+
+    return this;
   }
 
   setPosition(xPos: number, yPos: number) {
     this.xPos = xPos;
     this.yPos = yPos;
+
+    return this;
   }
 
   clear() {
@@ -89,7 +93,7 @@ class HealthBar {
     this.bar.fillRect(
       this.xPos + BORDER_WIDTH,
       this.yPos + BORDER_WIDTH,
-      percentage * this.width - 2 * BORDER_WIDTH,
+      percentage * (this.width - 2 * BORDER_WIDTH),
       BAR_HEIGHT - 2 * BORDER_WIDTH
     );
   }

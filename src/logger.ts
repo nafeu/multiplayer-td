@@ -7,6 +7,7 @@ const LOGGING_CONFIG = {
   UNIT_STATE_MACHINE: true,
   UNIT_ENTITY: true,
   PAUSE_MENU: false,
+  POINTER_UI_DEBUG: true,
 };
 
 export const LOGGING_KEYS_ALL = Object.keys(LOGGING_CONFIG);

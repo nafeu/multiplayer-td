@@ -34,14 +34,14 @@ export const generateId = (key: string) => {
   TODO: Remove this and utilize tilemaps built-in
         "get tile coordinate by position" func
 */
-export const getTileCoordinatesByPosition = (
+export const getTileRowColBySceneXY = (
   x: number,
   y: number
 ): TileCoordinates => {
-  const j = Math.floor(x / TILE_SIZE);
-  const i = Math.floor(y / TILE_SIZE);
+  const col = Math.floor(x / TILE_SIZE);
+  const row = Math.floor(y / TILE_SIZE);
 
-  return { i, j };
+  return { row, col };
 };
 
 /*
@@ -59,13 +59,13 @@ export const getValidUnitFormation = (
   units: readonly Unit[],
   map: number[][]
 ): Array<TileCoordinates> => {
-  const { i, j } = getTileCoordinatesByPosition(x, y);
+  const { row, col } = getTileRowColBySceneXY(x, y);
 
   const spots = AVAILABLE_FORMATIONS[entities.interaction.formationShape].map(
     (formation) => {
       return {
-        i: i + formation.i,
-        j: j + formation.j,
+        row: row + formation.row,
+        col: col + formation.col
       };
     }
   );
@@ -76,25 +76,25 @@ export const getValidUnitFormation = (
   let spotIndex = 0;
 
   while (unitsIndex < units.length && spotIndex < spots.length) {
-    const unitTilePosition = getTileCoordinatesByPosition(
+    const unitTilePosition = getTileRowColBySceneXY(
       units[unitsIndex].x,
       units[unitsIndex].y
     );
 
-    const spotColumn = spots[spotIndex].i;
-    const spotRow = spots[spotIndex].j;
+    const spotRow = spots[spotIndex].row;
+    const spotCol = spots[spotIndex].col;
 
     const hasColumnOption =
-      spotColumn >= 0 && map.length > spotColumn;
-    const hasRowOption = spotRow >= 0 && map[0].length > spotRow;
+      spotRow >= 0 && map.length > spotRow;
+    const hasRowOption = spotCol >= 0 && map[0].length > spotCol;
 
     const isValidPlacement =
       hasColumnOption &&
       hasRowOption &&
-      map[spotColumn][spotRow] === VALID_UNIT_POSITION;
+      map[spotRow][spotCol] === VALID_UNIT_POSITION;
 
     const selectedUnitAlreadyHere =
-      unitTilePosition.i === spotColumn && unitTilePosition.j === spotRow;
+      unitTilePosition.row === spotRow && unitTilePosition.col === spotCol;
 
     if (isValidPlacement || selectedUnitAlreadyHere) {
       output.push(spots[spotIndex]);
@@ -120,7 +120,7 @@ export const rotateFormationShape = () => {
 };
 
 export const isTileFreeAtPosition = (x: number, y: number, map: number[][]) => {
-  const { i: row, j: col } = getTileCoordinatesByPosition(x, y);
+  const { row, col } = getTileRowColBySceneXY(x, y);
 
   return map[row][col] !== OCCUPIED_UNIT_POSITION
     && map[row][col] !== UNIT_CROSSING;

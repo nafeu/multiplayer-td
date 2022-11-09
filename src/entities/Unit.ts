@@ -22,7 +22,7 @@ import { getLogger } from '../logger';
 import {
   generateId,
   getPositionByTile,
-  getTileCoordinatesByPosition,
+  getTileRowColBySceneXY,
 } from '../utils';
 import Bullet from './Bullet';
 import Enemy from './Enemy';
@@ -108,17 +108,17 @@ export class Unit extends Phaser.GameObjects.Image {
     let movingStatus = '';
     const destination = this.activePath.at(-1);
     if (this.isMoving() && destination) {
-      const destinationTile = getTileCoordinatesByPosition(
+      const destinationTile = getTileRowColBySceneXY(
         destination.x,
         destination.y
       );
-      movingStatus = ` -> (${destinationTile.i},${destinationTile.j})`;
+      movingStatus = ` -> (${destinationTile.row},${destinationTile.col})`;
     }
 
-    const currentTile = getTileCoordinatesByPosition(this.x, this.y);
+    const currentTile = getTileRowColBySceneXY(this.x, this.y);
     const currentState = this._machine.getSnapshot().value.toString();
 
-    return `${selected}${this.id} [${currentState}] (${currentTile.i}, ${currentTile.j})${movingStatus}`;
+    return `${selected}${this.id} [${currentState}] (${currentTile.row}, ${currentTile.col})${movingStatus}`;
   }
 
   destroy(fromScene?: boolean): void {
@@ -126,12 +126,12 @@ export class Unit extends Phaser.GameObjects.Image {
     super.destroy(fromScene);
   }
 
-  place(i: number, j: number) {
-    this.tilePositionRow = i;
-    this.tilePositionCol = j;
+  place(row: number, col: number) {
+    this.tilePositionRow = row;
+    this.tilePositionCol = col;
 
-    const GRID_PLACEMENT_Y = i * TILE_SIZE + TILE_SIZE / 2;
-    const GRID_PLACEMENT_X = j * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_Y = row * TILE_SIZE + TILE_SIZE / 2;
+    const GRID_PLACEMENT_X = col * TILE_SIZE + TILE_SIZE / 2;
 
     this.y = GRID_PLACEMENT_Y;
     this.x = GRID_PLACEMENT_X;
@@ -267,8 +267,8 @@ export class Unit extends Phaser.GameObjects.Image {
     }
 
     if (entities.selectedUnitGroup.hasUnit(this)) {
-      const { i, j } = getTileCoordinatesByPosition(this.x, this.y);
-      this.highlight.updatePositionByTile(i, j).draw();
+      const { row, col } = getTileRowColBySceneXY(this.x, this.y);
+      this.highlight.updatePositionByTile(row, col).draw();
     } else {
       this.highlight.clear();
     }

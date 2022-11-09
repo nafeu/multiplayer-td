@@ -8,7 +8,7 @@ import {
 } from '../constants';
 
 import {
-  getTileCoordinatesByPosition,
+  getTileRowColBySceneXY,
   getValidUnitFormation,
   isTileFreeAtPosition,
   isDebugMode,
@@ -64,8 +64,8 @@ class Pointer extends Phaser.GameObjects.GameObject {
 
         entities.selectedUnitGroup.getUnits().forEach((_, index) => {
           this.indicator.fillRect(
-            validUnitFormation[index].j * TILE_SIZE,
-            validUnitFormation[index].i * TILE_SIZE,
+            validUnitFormation[index].col * TILE_SIZE,
+            validUnitFormation[index].row * TILE_SIZE,
             TILE_SIZE,
             TILE_SIZE
           );
@@ -81,10 +81,10 @@ class Pointer extends Phaser.GameObjects.GameObject {
   }
 
   handlePointerMove = (pointer: Phaser.Input.Pointer) => {
-    const { i: y, j: x } = getTileCoordinatesByPosition(pointer.x, pointer.y);
+    const { row, col } = getTileRowColBySceneXY(pointer.x, pointer.y);
 
-    this.x = x * TILE_SIZE;
-    this.y = y * TILE_SIZE;
+    this.x = col * TILE_SIZE;
+    this.y = row * TILE_SIZE;
   };
 }
 

@@ -49,38 +49,33 @@ export const INDICATOR_VALID_SELECTION_COLOR = 0x27ae60;
 export const INDICATOR_INVALID_SELECTION_COLOR = 0xc0392b;
 export const INDICATOR_OPACITY = 0.75;
 
-type TileCoordinateOffset = {
-  i: number;
-  j: number;
-};
-
 export const AVAILABLE_FORMATIONS: {
-  [key: string]: Array<TileCoordinateOffset>;
+  [key: string]: Array<TileCoordinates>;
 } = {
   auto: [
-    { i: 0, j: 0 },
-    { i: 0, j: 1 },
-    { i: 1, j: 0 },
-    { i: 0, j: -1 },
-    { i: -1, j: 0 },
-    { i: 1, j: 1 },
-    { i: 1, j: -1 },
-    { i: -1, j: 1 },
-    { i: -1, j: -1 },
+    { row: 0, col: 0 },
+    { row: 0, col: 1 },
+    { row: 1, col: 0 },
+    { row: 0, col: -1 },
+    { row: -1, col: 0 },
+    { row: 1, col: 1 },
+    { row: 1, col: -1 },
+    { row: -1, col: 1 },
+    { row: -1, col: -1 },
   ],
   horizontal: [
-    { i: 0, j: 0 },
-    { i: 0, j: 1 },
-    { i: 0, j: -1 },
-    { i: 0, j: 2 },
-    { i: 0, j: -2 },
+    { row: 0, col: 0 },
+    { row: 0, col: 1 },
+    { row: 0, col: -1 },
+    { row: 0, col: 2 },
+    { row: 0, col: -2 },
   ],
   vertical: [
-    { i: 0, j: 0 },
-    { i: 1, j: 0 },
-    { i: -1, j: 0 },
-    { i: 2, j: 0 },
-    { i: -2, j: 0 },
+    { row: 0, col: 0 },
+    { row: 1, col: 0 },
+    { row: -1, col: 0 },
+    { row: 2, col: 0 },
+    { row: -2, col: 0 },
   ],
 };
 

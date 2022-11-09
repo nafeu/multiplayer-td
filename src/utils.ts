@@ -122,6 +122,8 @@ export const rotateFormationShape = () => {
 export const isTileFreeAtPosition = (x: number, y: number, map: number[][]) => {
   const { row, col } = getTileRowColBySceneXY(x, y);
 
-  return map[row][col] !== OCCUPIED_UNIT_POSITION
+  return row > 0
+    && col > 0
+    && map[row][col] !== OCCUPIED_UNIT_POSITION
     && map[row][col] !== UNIT_CROSSING;
 };

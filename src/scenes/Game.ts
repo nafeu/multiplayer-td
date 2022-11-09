@@ -284,8 +284,8 @@ export class Game extends Phaser.Scene {
             this.finder.findPath(
               originX,
               originY,
-              validMove.j,
-              validMove.i,
+              validMove.col,
+              validMove.row,
               (path) => {
                 if (path) {
                   selectedUnit.queueMove(path);

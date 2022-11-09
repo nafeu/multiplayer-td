@@ -5,8 +5,8 @@
 declare const window: { location: { search: string } };
 
 type TileCoordinates = {
-  i: number;
-  j: number;
+  row: number;
+  col: number;
 };
 
 // should be "NonNegativeInteger" but that doesn't exist

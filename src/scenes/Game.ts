@@ -9,6 +9,7 @@ import Pointer from '../entities/Pointer';
 import entities from '../entities';
 
 import { title as PauseMenuScene } from './PauseMenu';
+import { title as GameOverScene } from './GameOver';
 
 import {
   sendUiAlert,
@@ -117,13 +118,14 @@ export class Game extends Phaser.Scene {
     this.enemyPath = drawLegacyEnemyPath(this);
 
     // TODO: remove after we figure out objects for map
-    sliceFromTexture(
-      this,
-      HOMEBASE_TEXTURE_NAME,
-      'grass-biome',
-      32 * 3,
-      32 * 16
-    );
+    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
+      sliceFromTexture(
+        this,
+        HOMEBASE_TEXTURE_NAME,
+        'grass-biome',
+        32 * 3,
+        32 * 16
+      );
 
     this.tilemap = this.make.tilemap({ key: 'level-0' });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');
@@ -289,6 +291,7 @@ export class Game extends Phaser.Scene {
     if (entities.homeBase.hp === 0) {
       sendUiAlert({ message: 'GAME OVER' });
       this.scene.pause();
+      this.scene.start(GameOverScene);
     }
   }
 

@@ -30,7 +30,7 @@ import { getSearchParamKey, updateSearchParamKey } from './utils';
 
 (function loadDebugLoggerConfigurations() {
   const LOG_CONFIG_KEY = '__log_config';
-  const LOGGING_CONFIG = {};
+  const LOGGING_CONFIG: Record<string, boolean> = {};
   let loggingConfigOverrides = {};
 
   const searchParams = getSearchParamKey(LOG_CONFIG_KEY) ?? '{}';
@@ -53,10 +53,17 @@ import { getSearchParamKey, updateSearchParamKey } from './utils';
         loggingConfigOverrides[key] ?? getLoggingConfig(key as LOGGING_KEYS))
   );
 
+  let isAllEnabled = true;
+  LOGGING_KEYS_ALL.forEach(
+    (key) => (isAllEnabled = isAllEnabled && LOGGING_CONFIG[key])
+  );
+
   document.querySelector('#logging-controls').innerHTML = `<table>
         <tr>
           <th>Logging Key</th>
-          <th>Enabled?</th>
+          <th><input id="enable-all" type="checkbox" title="enable/disable all" ${
+            isAllEnabled ? 'checked' : ''
+          }/>
         </tr>
         ${Object.keys(LOGGING_CONFIG)
           .map((value) => {
@@ -65,7 +72,7 @@ import { getSearchParamKey, updateSearchParamKey } from './utils';
         <tr>
           <td>${value}</td>
           <td>
-            <input id="${value}" type="checkbox" ${
+            <input id="${value}" class="config-checkbox" type="checkbox" ${
               LOGGING_CONFIG[value] ? 'checked' : ''
             } />
           </td>
@@ -78,11 +85,27 @@ import { getSearchParamKey, updateSearchParamKey } from './utils';
     .querySelector('#logging-controls')
     .addEventListener('click', (event) => {
       const target = event.target as HTMLInputElement;
-      if (target.type === 'checkbox') {
-        setLoggingConfig(target.id as LOGGING_KEYS, target.checked);
-        LOGGING_CONFIG[target.id] = target.checked;
+      if (target.type !== 'checkbox') return;
+
+      if (target.id === 'enable-all') {
+        [].forEach.call(
+          document.querySelectorAll('.config-checkbox'),
+          (el: HTMLInputElement) => {
+            el.checked = target.checked;
+          }
+        );
+
+        LOGGING_KEYS_ALL.forEach((key) => {
+          LOGGING_CONFIG[key] = target.checked;
+          setLoggingConfig(key as LOGGING_KEYS, target.checked);
+        });
 
         updateSearchParamKey(LOG_CONFIG_KEY, JSON.stringify(LOGGING_CONFIG));
       }
+
+      setLoggingConfig(target.id as LOGGING_KEYS, target.checked);
+      LOGGING_CONFIG[target.id] = target.checked;
+
+      updateSearchParamKey(LOG_CONFIG_KEY, JSON.stringify(LOGGING_CONFIG));
     });
 })();

@@ -1,4 +1,5 @@
 import { BOARD_HEIGHT, BOARD_WIDTH } from '../constants';
+import { hasDebugFlag } from '../utils';
 import { title as GameScene } from './Game';
 
 export const title = 'main-menu';
@@ -32,6 +33,10 @@ export class MainMenu extends Phaser.Scene {
         align: 'center',
       })
       .setOrigin(0.5, 0.5);
+
+    if (hasDebugFlag('quick-start')) {
+      this.handleStartGame();
+    }
   }
 
   handleStartGame = () => {

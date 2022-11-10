@@ -15,6 +15,7 @@ import {
   getValidUnitFormation,
   rotateFormationShape,
   isTileFreeAtPosition,
+  getPositionForTileCoordinates,
 } from '../utils';
 
 import {
@@ -30,9 +31,10 @@ import {
   SELECTION_RECTANGLE_OPACITY,
   GLOBAL_KEYS__MENU_KEY,
   UNIT_CROSSING,
-  INVALID_TURRENT_POSITION
+  INVALID_TURRENT_POSITION,
 } from '../constants';
 import { getLoggingConfig } from '../logger';
+import HomeBase from '../entities/HomeBase';
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
@@ -73,10 +75,10 @@ export class Game extends Phaser.Scene {
       'assets/spritesheet.json.text'
     );
     // load the PNG file
-    this.load.image('grass-biome', 'assets/grass-biome.png')
+    this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // load the JSON file
-    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj')
+    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj');
   }
 
   create() {
@@ -112,23 +114,25 @@ export class Game extends Phaser.Scene {
 
     this.enemyPath = drawLegacyEnemyPath(this);
 
-    this.tilemap = this.make.tilemap({ key: 'level-0' })
-    this.tileset = this.tilemap.addTilesetImage('grass-biome')
-    this.tilemap.createLayer('Below Player', this.tileset)
+    this.tilemap = this.make.tilemap({ key: 'level-0' });
+    this.tileset = this.tilemap.addTilesetImage('grass-biome');
+    this.tilemap.createLayer('Below Player', this.tileset);
 
-    const newMapGrid = this.tilemap.getLayer('Below Player').data.map(row => row.map(col => {
-      if (col.properties.collision || col.properties.enemyPath) {
-        return INVALID_TURRENT_POSITION;
-      }
+    const newMapGrid = this.tilemap.getLayer('Below Player').data.map((row) =>
+      row.map((col) => {
+        if (col.properties.collision || col.properties.enemyPath) {
+          return INVALID_TURRENT_POSITION;
+        }
 
-      if (col.properties.crossing) {
-        return UNIT_CROSSING;
-      }
+        if (col.properties.crossing) {
+          return UNIT_CROSSING;
+        }
 
-      return VALID_UNIT_POSITION;
-    }))
+        return VALID_UNIT_POSITION;
+      })
+    );
 
-    this.map = newMapGrid
+    this.map = newMapGrid;
 
     configurePathFindingGrid(this.finder, this.map);
     entities.pointer = new Pointer(this, this.add.graphics());
@@ -162,6 +166,11 @@ export class Game extends Phaser.Scene {
       runChildUpdate: true,
     });
 
+    const home = getPositionForTileCoordinates({ row: 12 + 2, col: 15 });
+    entities.homeBase = new HomeBase(this, home.x, home.y);
+    this.add.existing(entities.homeBase);
+    this.physics.add.existing(entities.homeBase);
+
     // this is a type helper
     // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
     // and doesn't technically guarantee ordering of the objects being compared
@@ -176,18 +185,32 @@ export class Game extends Phaser.Scene {
       wrappedDamageEnemy
     );
 
+    this.physics.add.overlap(
+      entities.enemyGroup,
+      entities.homeBase,
+      // nasty bug source: ordering of objects in callback is not guaranteed from registration order
+      (homebase, enemy) => {
+        if (!enemy.active) return;
+
+        const enemyHP = (enemy as Enemy).hp;
+        (homebase as HomeBase).receiveDamage(enemyHP);
+        (enemy as Enemy).receiveDamage(enemyHP);
+      }
+    );
+
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
         align: 'right',
       })
       .setOrigin(1, 0);
 
-    // Setup Default Units
-    // placeUnit(70, 250, UnitType.NORMAL);
-    // placeUnit(100, 250, UnitType.NORMAL);
-
     Object.keys(UnitType).forEach((unitType, idx) => {
-      placeUnit(70 + idx * TILE_SIZE, 250, unitType as keyof typeof UnitType, this.map);
+      placeUnit(
+        70 + idx * TILE_SIZE,
+        250,
+        unitType as keyof typeof UnitType,
+        this.map
+      );
     });
   }
 
@@ -223,7 +246,7 @@ export class Game extends Phaser.Scene {
     return [];
   }
 
-  update(time: number) {
+  update(time: number, delta: number) {
     this.playerHUD.setText([
       `Units Available: ${
         UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
@@ -232,6 +255,7 @@ export class Game extends Phaser.Scene {
       `Formation: ${entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
+      `Homebase: ${entities.homeBase.toString()}`,
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
@@ -249,6 +273,12 @@ export class Game extends Phaser.Scene {
     }
 
     entities.pointer.update();
+    entities.homeBase.update(time, delta);
+
+    if (entities.homeBase.hp === 0) {
+      sendUiAlert({ message: 'GAME OVER' });
+      this.scene.pause();
+    }
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
@@ -271,7 +301,10 @@ export class Game extends Phaser.Scene {
       const selectedUnitCount = entities.selectedUnitGroup.size();
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-      if (hasSpaceForUnits && isTileFreeAtPosition(pointer.x, pointer.y, this.map)) {
+      if (
+        hasSpaceForUnits &&
+        isTileFreeAtPosition(pointer.x, pointer.y, this.map)
+      ) {
         this.finder.setGrid(this.map);
 
         entities.selectedUnitGroup
@@ -407,7 +440,7 @@ function placeUnit(
   x: number,
   y: number,
   type = 'NORMAL' as keyof typeof UnitType,
-  map: number[][],
+  map: number[][]
 ) {
   const row = Math.floor(y / TILE_SIZE);
   const column = Math.floor(x / TILE_SIZE);
@@ -447,7 +480,7 @@ function configurePathFindingGrid(finder: EasyStar.js, map: number[][]) {
   finder.setAcceptableTiles([
     VALID_UNIT_POSITION,
     OCCUPIED_UNIT_POSITION,
-    UNIT_CROSSING
+    UNIT_CROSSING,
   ]);
 }
 

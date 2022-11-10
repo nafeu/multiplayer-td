@@ -4,6 +4,7 @@ import {
   HOMEBASE_TEXTURE_NAME,
   HOMEBASE__SHAKE_DURATION,
   HOMEBASE__SHAKE_INTENSITY,
+  TILE_SIZE,
 } from '../constants';
 import HealthBar from './HealthBar';
 
@@ -11,23 +12,17 @@ class HomeBase extends Phaser.GameObjects.Image {
   hp: number;
   healthBar: HealthBar;
 
-  originalX: number;
-  originalY: number;
-
   constructor(scene: Scene, x: number, y: number) {
     super(scene, 0, 0, HOMEBASE_TEXTURE_NAME);
 
     this.x = x;
     this.y = y;
-    // used for shake
-    this.originalX = this.x;
-    this.originalY = this.y;
 
     this.hp = HOMEBASE_HP;
     this.healthBar = new HealthBar(
       scene,
-      this.x - 16,
-      this.y - 32,
+      this.x - TILE_SIZE / 2,
+      this.y - TILE_SIZE,
       this.hp,
       this.hp
     );

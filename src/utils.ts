@@ -33,6 +33,16 @@ export const getPositionByTile = (coordinate: number) => {
   return coordinate * TILE_SIZE + TILE_SIZE / 2;
 };
 
+export const getSearchParamKey = (key: string) =>
+  new URLSearchParams(window.location.search).get(key);
+
+export const updateSearchParamKey = (key: string, value: string) => {
+  const oldParams = new URLSearchParams(window.location.search);
+  oldParams.set(key, value);
+
+  window.history.pushState(null, null, '?' + oldParams.toString());
+};
+
 /*
   TODO: Remove this and utilize tilemaps built-in
         "get tile coordinate by position" func

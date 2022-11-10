@@ -18,7 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [MainMenu, Game, PauseMenu],
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
 
 import {
   setLoggingConfig,
@@ -26,11 +26,31 @@ import {
   LOGGING_KEYS_ALL,
   LOGGING_KEYS,
 } from './logger';
+import { getSearchParamKey, updateSearchParamKey } from './utils';
 
 (function loadDebugLoggerConfigurations() {
+  const LOG_CONFIG_KEY = '__log_config';
   const LOGGING_CONFIG = {};
+  let loggingConfigOverrides = {};
+
+  const searchParams = getSearchParamKey(LOG_CONFIG_KEY) ?? '{}';
+  try {
+    loggingConfigOverrides = JSON.parse(searchParams) as Record<
+      string,
+      boolean
+    >;
+  } catch (e) {
+    console.error('Logging Config Parsing failed?', {
+      e,
+      LOG_CONFIG_KEY,
+      searchParams,
+    });
+  }
+
   LOGGING_KEYS_ALL.forEach(
-    (key) => (LOGGING_CONFIG[key] = getLoggingConfig(key as LOGGING_KEYS))
+    (key) =>
+      (LOGGING_CONFIG[key] =
+        loggingConfigOverrides[key] ?? getLoggingConfig(key as LOGGING_KEYS))
   );
 
   document.querySelector('#logging-controls').innerHTML = `<table>
@@ -60,6 +80,9 @@ import {
       const target = event.target as HTMLInputElement;
       if (target.type === 'checkbox') {
         setLoggingConfig(target.id as LOGGING_KEYS, target.checked);
+        LOGGING_CONFIG[target.id] = target.checked;
+
+        updateSearchParamKey(LOG_CONFIG_KEY, JSON.stringify(LOGGING_CONFIG));
       }
     });
 })();

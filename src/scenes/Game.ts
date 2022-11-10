@@ -63,7 +63,7 @@ export class Game extends Phaser.Scene {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore: Unreachable code error
-    this.load.path = import.meta.env?.BASE_URL ?? 'public/';
+    this.load.path = (import.meta.env?.BASE_URL as string) ?? 'public/';
 
     this.load.atlas(
       SPRITE_ATLAS_NAME,
@@ -255,7 +255,7 @@ export class Game extends Phaser.Scene {
       `Formation: ${entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
-      `Homebase: ${entities.homeBase.toString()}`,
+      // `${entities.homeBase.toString()}`,
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;

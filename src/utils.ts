@@ -3,7 +3,7 @@ import {
   VALID_UNIT_POSITION,
   AVAILABLE_FORMATIONS,
   OCCUPIED_UNIT_POSITION,
-  UNIT_CROSSING
+  UNIT_CROSSING,
 } from './constants';
 import entities from './entities';
 import Unit from './entities/Unit';
@@ -13,21 +13,24 @@ export const noop = () => {};
 
 export const clone = (b): unknown => JSON.parse(JSON.stringify(b));
 
+const ID_MAP: Record<string, number> = {};
+
+export const generateId = (key: string) => {
+  ID_MAP[key] = (ID_MAP[key] ?? 0) + 1;
+  return `${key}:${ID_MAP[key]}`;
+};
+
 /*
   TODO: 'Window' type is not being detected from DOM lib, problematic
         for typechecking, we need to fix this.
 */
 export const isDebugMode = !window.location.search.includes('preview=true');
 
+export const hasDebugFlag = (flag: string) =>
+  window.location.search.includes(`${flag}=true`);
+
 export const getPositionByTile = (coordinate: number) => {
   return coordinate * TILE_SIZE + TILE_SIZE / 2;
-};
-
-const ID_MAP: Record<string, number> = {};
-
-export const generateId = (key: string) => {
-  ID_MAP[key] = (ID_MAP[key] ?? 0) + 1;
-  return `${key}:${ID_MAP[key]}`;
 };
 
 /*
@@ -65,7 +68,7 @@ export const getValidUnitFormation = (
     (formation) => {
       return {
         row: row + formation.row,
-        col: col + formation.col
+        col: col + formation.col,
       };
     }
   );
@@ -84,8 +87,7 @@ export const getValidUnitFormation = (
     const spotRow = spots[spotIndex].row;
     const spotCol = spots[spotIndex].col;
 
-    const hasColumnOption =
-      spotRow >= 0 && map.length > spotRow;
+    const hasColumnOption = spotRow >= 0 && map.length > spotRow;
     const hasRowOption = spotCol >= 0 && map[0].length > spotCol;
 
     const isValidPlacement =
@@ -122,8 +124,10 @@ export const rotateFormationShape = () => {
 export const isTileFreeAtPosition = (x: number, y: number, map: number[][]) => {
   const { row, col } = getTileRowColBySceneXY(x, y);
 
-  return row > 0
-    && col > 0
-    && map[row][col] !== OCCUPIED_UNIT_POSITION
-    && map[row][col] !== UNIT_CROSSING;
+  return (
+    row > 0 &&
+    col > 0 &&
+    map[row][col] !== OCCUPIED_UNIT_POSITION &&
+    map[row][col] !== UNIT_CROSSING
+  );
 };

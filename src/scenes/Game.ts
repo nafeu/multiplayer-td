@@ -32,9 +32,11 @@ import {
   GLOBAL_KEYS__MENU_KEY,
   UNIT_CROSSING,
   INVALID_TURRENT_POSITION,
+  HOMEBASE_TEXTURE_NAME,
 } from '../constants';
 import { getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
+import { sliceFromTexture } from '../texture-utils';
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
@@ -113,6 +115,15 @@ export class Game extends Phaser.Scene {
     );
 
     this.enemyPath = drawLegacyEnemyPath(this);
+
+    // TODO: remove after we figure out objects for map
+    sliceFromTexture(
+      this,
+      HOMEBASE_TEXTURE_NAME,
+      'grass-biome',
+      32 * 3,
+      32 * 16
+    );
 
     this.tilemap = this.make.tilemap({ key: 'level-0' });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');

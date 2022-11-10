@@ -13,6 +13,7 @@ export const UNIT_IMG_NAME__CHONKY = 'chonky.png';
 export const UNIT_IMG_NAME__SNIPEY = 'snipey.png';
 export const BULLET_IMG_NAME = '17.png';
 export const ENEMY_IMG_NAME = '05.png';
+export const HOMEBASE_TEXTURE_NAME = 'homebase';
 
 export const TILE_SIZE = SPRITE_SIZE;
 

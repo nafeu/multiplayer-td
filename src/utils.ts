@@ -11,7 +11,8 @@ import Unit from './entities/Unit';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const noop = () => {};
 
-export const clone = (b): unknown => JSON.parse(JSON.stringify(b));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const clone = <T>(b: T) => JSON.parse(JSON.stringify(b)) as T;
 
 const ID_MAP: Record<string, number> = {};
 

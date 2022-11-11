@@ -148,12 +148,6 @@ export class Unit extends Phaser.GameObjects.Image {
 
     if (enemy) {
       this.shootBullet(enemy);
-      // const approximateDistance = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y)
-      // approximateDistance / Bullet.speed
-      // enemy.getPositionAfterDelta()
-      // const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
-      // addBullet(this.x, this.y, angle, this);
-      // this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
     }
   }
 
@@ -343,15 +337,6 @@ export class Unit extends Phaser.GameObjects.Image {
       entities.selectedUnitGroup.addUnit(this);
     }
   };
-}
-
-function addBullet(x: number, y: number, angle: number, unit: Unit) {
-  const bullet = entities.bullets.get() as Bullet | null;
-
-  if (bullet) {
-    bullet.setDamage(unit.getDamage());
-    bullet.fire(x, y, angle);
-  }
 }
 
 function getEnemy(x: number, y: number, distance: number) {

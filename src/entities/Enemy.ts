@@ -12,7 +12,7 @@ import {
   ENEMY_SPEED,
 } from '../constants';
 
-class Enemy extends Phaser.GameObjects.Image {
+class Enemy extends Phaser.Physics.Arcade.Image {
   id: string;
   follower: { t: 0; vec: Phaser.Math.Vector2 };
   hp: number;
@@ -31,6 +31,10 @@ class Enemy extends Phaser.GameObjects.Image {
 
     this.healthBar = new HealthBar(scene, -100, -100, ENEMY_HP, ENEMY_HP);
     this.recycled = 0;
+  }
+
+  setCorrectBoundingBox() {
+    this.body.setSize(20, 20, true);
   }
 
   _resetValuesForRecycle() {
@@ -64,6 +68,13 @@ class Enemy extends Phaser.GameObjects.Image {
 
     // set the x and y of our enemy to the received from the previous step
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
+  }
+
+  getPositionAfterDelta(delta: number) {
+    return this.enemyPath.getPoint(
+      this.follower.t + ENEMY_SPEED * delta,
+      this.follower.vec
+    );
   }
 
   update(time: number, delta: number) {

@@ -147,9 +147,43 @@ export class Unit extends Phaser.GameObjects.Image {
     const enemy = getEnemy(this.x, this.y, this.getFireRange());
 
     if (enemy) {
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
-      addBullet(this.x, this.y, angle, this);
-      this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
+      this.shootBullet(enemy);
+    }
+  }
+
+  shootBullet(enemy: Enemy) {
+    const bullet = entities.bullets.get() as Bullet | null;
+
+    if (bullet) {
+      // When the bounding box is tighter, the collision detection precision is more important
+      // And in order to be more precise,
+      // we have to predict where the Enemy will be when the Bullet hits it
+
+      // First: figure out distance to target
+      // assume bullet speed >>> enemy speed (footgun: speedy units...)
+      // therefore, current distance ~= distance till collision
+      const approximateDistance = Phaser.Math.Distance.Between(
+        this.x,
+        this.y,
+        enemy.x,
+        enemy.y
+      );
+
+      // Second: using distance and speed, make a prediction
+      // of when the bullet will collide with the enemy
+      const futurePosition = enemy.getPositionAfterDelta(
+        approximateDistance / bullet.speed
+      );
+
+      const angle = Phaser.Math.Angle.Between(
+        this.x,
+        this.y,
+        futurePosition.x,
+        futurePosition.y
+      );
+
+      bullet.setDamage(this.getDamage());
+      bullet.fire(this.x, this.y, angle);
     }
   }
 
@@ -220,8 +254,7 @@ export class Unit extends Phaser.GameObjects.Image {
     const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
 
     // mark current tile as vacant
-    this.map[this.tilePositionRow][this.tilePositionCol] =
-      VALID_UNIT_POSITION;
+    this.map[this.tilePositionRow][this.tilePositionCol] = VALID_UNIT_POSITION;
 
     this.tilePositionRow = tilePositionRow;
     this.tilePositionCol = tilePositionCol;
@@ -306,16 +339,8 @@ export class Unit extends Phaser.GameObjects.Image {
   };
 }
 
-function addBullet(x: number, y: number, angle: number, unit: Unit) {
-  const bullet = entities.bullets.get() as Bullet | null;
-
-  if (bullet) {
-    bullet.setDamage(unit.getDamage());
-    bullet.fire(x, y, angle);
-  }
-}
-
 function getEnemy(x: number, y: number, distance: number) {
+  // TODO: should also allow biasing for enemies closer to HomeBase
   const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 
   for (let i = 0; i < enemyUnits.length; i++) {

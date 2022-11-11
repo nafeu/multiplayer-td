@@ -148,7 +148,7 @@ export class Game extends Phaser.Scene {
     this.map = newMapGrid;
 
     configurePathFindingGrid(this.finder, this.map);
-    entities.pointer = new Pointer(this, this.add.graphics());
+    entities.pointer = new Pointer(this);
     this.selection = addSelectionRectangle(this);
 
     entities.unitGroup = this.add.group({
@@ -165,6 +165,9 @@ export class Game extends Phaser.Scene {
     entities.enemyGroup = this.physics.add.group({
       classType: Enemy,
       runChildUpdate: true,
+      createCallback: (enemy: Enemy) => {
+        enemy.setCorrectBoundingBox();
+      },
       // removeCallback doesn't get triggered for recycled objects - don't rely on this for resets
       // removeCallback: function (enemy: typeof Enemy) {
       //   console.log('### Enemy Removed', enemy.id);
@@ -176,6 +179,9 @@ export class Game extends Phaser.Scene {
 
     entities.bullets = this.physics.add.group({
       classType: Bullet,
+      createCallback: (bullet: Bullet) => {
+        bullet.setCorrectBoundingBox();
+      },
       runChildUpdate: true,
     });
 

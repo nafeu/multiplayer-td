@@ -70,6 +70,13 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
   }
 
+  getPositionAfterDelta(delta: number) {
+    return this.enemyPath.getPoint(
+      this.follower.t + ENEMY_SPEED * delta,
+      this.follower.vec
+    );
+  }
+
   update(time: number, delta: number) {
     // move the t point along the path, 0 is the start and 0 is the end
     this.follower.t += ENEMY_SPEED * delta;

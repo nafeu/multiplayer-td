@@ -4,6 +4,8 @@ An experimental rougelike multiplayer tower defense game built with Phaser.io
 
 View most latest builds (off `main`) here: https://nafeu.com/multiplayer-td/
 
+![deployment status](https://github.com/nafeu/multiplayer-td/actions/workflows/gh-pages.yml/badge.svg)
+
 ## Install
 
 *Use `bun` for local development.*

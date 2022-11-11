@@ -2,7 +2,7 @@ import Phaser, { Scene } from 'phaser';
 
 import { SPRITE_ATLAS_NAME, BULLET_IMG_NAME } from '../constants';
 
-class Bullet extends Phaser.GameObjects.Image {
+class Bullet extends Phaser.Physics.Arcade.Image {
   dx: number;
   dy: number;
   lifespan: number;
@@ -16,6 +16,10 @@ class Bullet extends Phaser.GameObjects.Image {
     this.dy = 0;
     this.lifespan = 0;
     this.speed = Phaser.Math.GetSpeed(300, 1);
+  }
+
+  setCorrectBoundingBox() {
+    this.body.setSize(10, 10, true);
   }
 
   setDamage(damage: number) {

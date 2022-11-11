@@ -14,6 +14,9 @@ const config: Phaser.Types.Core.GameConfig = {
   height: BOARD_HEIGHT,
   backgroundColor: BOARD_BACKGROUND_COLOR,
   physics: {
+    arcade: {
+      debug: hasDebugFlag('show-physics-box'),
+    },
     default: 'arcade',
   },
   scene: [MainMenu, Game, PauseMenu, GameOver],
@@ -27,7 +30,7 @@ import {
   LOGGING_KEYS_ALL,
   LOGGING_KEYS,
 } from './logger';
-import { getSearchParamKey, updateSearchParamKey } from './utils';
+import { getSearchParamKey, hasDebugFlag, updateSearchParamKey } from './utils';
 
 (function loadDebugLoggerConfigurations() {
   const LOG_CONFIG_KEY = '__log_config';

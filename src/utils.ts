@@ -20,13 +20,6 @@ export const generateId = (key: string) => {
   return `${key}:${ID_MAP[key]}`;
 };
 
-<<<<<<< HEAD
-/*
-  TODO: 'Window' type is not being detected from DOM lib, problematic
-        for typechecking, we need to fix this.
-*/
-=======
->>>>>>> b2cc089 (added home base sprite to game scene)
 export const isDebugMode = !window.location.search.includes('preview=true');
 
 export const hasDebugFlag = (flag: string) =>
@@ -36,7 +29,6 @@ export const getPositionByTile = (coordinate: number) => {
   return coordinate * TILE_SIZE + TILE_SIZE / 2;
 };
 
-<<<<<<< HEAD
 export const getSearchParamKey = (key: string) =>
   new URLSearchParams(window.location.search).get(key);
 
@@ -45,13 +37,13 @@ export const updateSearchParamKey = (key: string, value: string) => {
   oldParams.set(key, value);
 
   window.history.pushState(null, null, '?' + oldParams.toString());
-=======
+};
+
 export const getPositionForTileCoordinates = ({
   row,
   col,
 }: TileCoordinates) => {
   return { x: getPositionByTile(row), y: getPositionByTile(col) };
->>>>>>> b2cc089 (added home base sprite to game scene)
 };
 
 /*

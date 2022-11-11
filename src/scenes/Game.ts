@@ -148,7 +148,7 @@ export class Game extends Phaser.Scene {
     this.map = newMapGrid;
 
     configurePathFindingGrid(this.finder, this.map);
-    entities.pointer = new Pointer(this, this.add.graphics());
+    entities.pointer = new Pointer(this);
     this.selection = addSelectionRectangle(this);
 
     entities.unitGroup = this.add.group({

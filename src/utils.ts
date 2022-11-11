@@ -20,10 +20,6 @@ export const generateId = (key: string) => {
   return `${key}:${ID_MAP[key]}`;
 };
 
-/*
-  TODO: 'Window' type is not being detected from DOM lib, problematic
-        for typechecking, we need to fix this.
-*/
 export const isDebugMode = !window.location.search.includes('preview=true');
 
 export const hasDebugFlag = (flag: string) =>
@@ -41,6 +37,13 @@ export const updateSearchParamKey = (key: string, value: string) => {
   oldParams.set(key, value);
 
   window.history.pushState(null, null, '?' + oldParams.toString());
+};
+
+export const getPositionForTileCoordinates = ({
+  row,
+  col,
+}: TileCoordinates) => {
+  return { x: getPositionByTile(row), y: getPositionByTile(col) };
 };
 
 /*

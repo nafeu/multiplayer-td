@@ -5,6 +5,7 @@ import { BOARD_BACKGROUND_COLOR, BOARD_HEIGHT, BOARD_WIDTH } from './constants';
 import { Game } from './scenes/Game';
 import { MainMenu } from './scenes/MainMenu';
 import { PauseMenu } from './scenes/PauseMenu';
+import { GameOver } from './scenes/GameOver';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -15,7 +16,7 @@ const config: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
   },
-  scene: [MainMenu, Game, PauseMenu],
+  scene: [MainMenu, Game, PauseMenu, GameOver],
 };
 
 new Phaser.Game(config);

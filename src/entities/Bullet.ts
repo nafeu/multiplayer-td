@@ -8,7 +8,7 @@ class Bullet extends Phaser.Physics.Arcade.Image {
   lifespan: number;
   speed: number;
 
-  _damage: number;
+  _damage = 0;
 
   constructor(scene: Scene) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, BULLET_IMG_NAME);

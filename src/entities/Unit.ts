@@ -18,7 +18,6 @@ import {
   UNIT_IMG_NAME__SPEEDY,
   UNIT_IMG_NAME__SNIPEY,
 } from '../constants';
-import entities from '../entities';
 import { getLogger } from '../logger';
 import {
   generateId,
@@ -53,8 +52,8 @@ export class Unit extends Phaser.GameObjects.Image {
 
   highlight: TileHighlight;
 
-  tilePositionRow: number;
-  tilePositionCol: number;
+  tilePositionRow = -100;
+  tilePositionCol = -100;
 
   map: number[][];
 
@@ -104,6 +103,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   toString() {
+    const entities = (this.scene as Game).entities;
     const selected = entities.selectedUnitGroup.hasUnit(this) ? '*' : '';
 
     let movingStatus = '';
@@ -144,7 +144,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   fire() {
-    const enemy = getEnemy(this.x, this.y, this.getFireRange());
+    const enemy = this.getEnemy(this.x, this.y, this.getFireRange());
 
     if (enemy) {
       this.shootBullet(enemy);
@@ -152,6 +152,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   shootBullet(enemy: Enemy) {
+    const entities = (this.scene as Game).entities;
     const bullet = entities.bullets.get() as Bullet | null;
 
     if (bullet) {
@@ -251,7 +252,15 @@ export class Unit extends Phaser.GameObjects.Image {
     const path = this._queuedPath;
 
     // find Final position
-    const { x: tilePositionCol, y: tilePositionRow } = path.at(-1);
+    // TODO: can we assert if this is always valid somehow?
+    const finalPosition = path.at(-1);
+
+    if (!finalPosition) {
+      console.error('ERROR in startMovingToQueuedPath', finalPosition, path);
+      return;
+    }
+
+    const { x: tilePositionCol, y: tilePositionRow } = finalPosition;
 
     // mark current tile as vacant
     this.map[this.tilePositionRow][this.tilePositionCol] = VALID_UNIT_POSITION;
@@ -292,6 +301,8 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   update(time: number, delta: number) {
+    const entities = (this.scene as Game).entities;
+
     if (this.isMoving()) {
       this.setTint(UNIT_MOVING_TINT);
     } else if (this.isPreparing()) {
@@ -327,6 +338,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
+    const entities = (this.scene as Game).entities;
     const keysDuringPointerEvent =
       pointer.event as unknown as Phaser.Input.Keyboard.Key;
 
@@ -337,22 +349,23 @@ export class Unit extends Phaser.GameObjects.Image {
       entities.selectedUnitGroup.addUnit(this);
     }
   };
-}
 
-function getEnemy(x: number, y: number, distance: number) {
-  // TODO: should also allow biasing for enemies closer to HomeBase
-  const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
+  getEnemy(x: number, y: number, distance: number) {
+    const entities = (this.scene as Game).entities;
+    // TODO: should also allow biasing for enemies closer to HomeBase
+    const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 
-  for (let i = 0; i < enemyUnits.length; i++) {
-    if (
-      enemyUnits[i].active &&
-      Phaser.Math.Distance.Between(x, y, enemyUnits[i].x, enemyUnits[i].y) <=
-        distance
-    )
-      return enemyUnits[i];
+    for (let i = 0; i < enemyUnits.length; i++) {
+      if (
+        enemyUnits[i].active &&
+        Phaser.Math.Distance.Between(x, y, enemyUnits[i].x, enemyUnits[i].y) <=
+          distance
+      )
+        return enemyUnits[i];
+    }
+
+    return false;
   }
-
-  return false;
 }
 
 function moveTowardsTarget(unit: Unit, delta: number) {

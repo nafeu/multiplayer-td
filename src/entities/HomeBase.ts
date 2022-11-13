@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { t } from 'xstate';
 import {
   HOMEBASE_DAMAGED_TINT,
   HOMEBASE_DEAD_TINT,
@@ -16,7 +17,7 @@ class HomeBase extends Phaser.GameObjects.Image {
 
   _previousDamageTintReset: Phaser.Time.TimerEvent | null;
 
-  constructor(scene: Scene, x: number, y: number) {
+  constructor(scene: Scene, x = -100, y = -100) {
     super(scene, 0, 0, HOMEBASE_TEXTURE_NAME);
 
     this.x = x;
@@ -32,6 +33,13 @@ class HomeBase extends Phaser.GameObjects.Image {
     );
 
     this._previousDamageTintReset = null;
+  }
+
+  setNewPosition(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+
+    this.healthBar.setPosition(x, y);
   }
 
   toString() {

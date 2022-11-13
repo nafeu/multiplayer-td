@@ -17,6 +17,11 @@ export function sliceFromTexture(
 
   const newCtx = (newT.getSourceImage() as HTMLCanvasElement).getContext('2d');
 
+  if (!newCtx) {
+    console.error('### COULD NOT SLICE NEW TEXTURE', newCtx);
+    return;
+  }
+
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
   newCtx.drawImage(
     source as HTMLImageElement,

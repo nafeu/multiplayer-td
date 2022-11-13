@@ -12,7 +12,8 @@
       "node_modules/bun-types/types",
       "node_module/phaser/types"
     ],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strict": true
   },
   "include": ["src"],
   "exclude": ["node_modules"]

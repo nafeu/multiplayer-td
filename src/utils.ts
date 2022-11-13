@@ -5,7 +5,7 @@ import {
   OCCUPIED_UNIT_POSITION,
   UNIT_CROSSING,
 } from './constants';
-import entities from './entities';
+import { EntityManager } from './entities';
 import Unit from './entities/Unit';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -37,7 +37,7 @@ export const updateSearchParamKey = (key: string, value: string) => {
   const oldParams = new URLSearchParams(window.location.search);
   oldParams.set(key, value);
 
-  window.history.pushState(null, null, '?' + oldParams.toString());
+  window.history.pushState(null, '', '?' + oldParams.toString());
 };
 
 export const getPositionForTileCoordinates = ({
@@ -74,11 +74,12 @@ export const getValidUnitFormation = (
   x: number,
   y: number,
   units: readonly Unit[],
-  map: number[][]
+  map: number[][],
+  interaction: EntityManager['interaction']
 ): Array<TileCoordinates> => {
   const { row, col } = getTileRowColBySceneXY(x, y);
 
-  const spots = AVAILABLE_FORMATIONS[entities.interaction.formationShape].map(
+  const spots = AVAILABLE_FORMATIONS[interaction.formationShape].map(
     (formation) => {
       return {
         row: row + formation.row,
@@ -125,13 +126,15 @@ export const getValidUnitFormation = (
 };
 
 // TODO: Refactor and move this to some kind of user interaction class
-export const rotateFormationShape = () => {
-  if (entities.interaction.formationShape === 'auto') {
-    entities.interaction.formationShape = 'horizontal';
-  } else if (entities.interaction.formationShape === 'horizontal') {
-    entities.interaction.formationShape = 'vertical';
+export const rotateFormationShape = (
+  interaction: EntityManager['interaction']
+) => {
+  if (interaction.formationShape === 'auto') {
+    interaction.formationShape = 'horizontal';
+  } else if (interaction.formationShape === 'horizontal') {
+    interaction.formationShape = 'vertical';
   } else {
-    entities.interaction.formationShape = 'auto';
+    interaction.formationShape = 'auto';
   }
 };
 

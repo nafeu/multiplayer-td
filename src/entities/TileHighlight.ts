@@ -29,7 +29,7 @@ export class TileHighlight {
     this.yPos = -100;
 
     this.lineColour = lineColour;
-    this.fillColour = fillColour >= 0 ? fillColour : null;
+    this.fillColour = fillColour >= 0 ? fillColour : this.lineColour;
     this.borderSize = borderSize;
   }
 

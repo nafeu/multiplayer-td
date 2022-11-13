@@ -52,12 +52,12 @@ export function getLogger(key: LOGGING_KEYS) {
     },
     {
       get(target, prop, receiver) {
-        if (!target[prop]) {
+        if (!target[prop as keyof typeof target]) {
           console.warn('!!! UNEXPECTED LOG TYPE', target, prop, receiver);
-          return console[prop];
+          return console[prop as keyof typeof console];
         }
 
-        return target[prop];
+        return target[prop as keyof typeof target];
       },
     }
   );

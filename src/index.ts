@@ -34,7 +34,7 @@ new Phaser.Game(config);
 (function loadDebugLoggerConfigurations() {
   const LOG_CONFIG_KEY = '__log_config';
   const LOGGING_CONFIG: Record<string, boolean> = {};
-  let loggingConfigOverrides = {};
+  let loggingConfigOverrides: Record<string, boolean> = {};
 
   const searchParams = getSearchParamKey(LOG_CONFIG_KEY) ?? '{}';
   try {
@@ -61,7 +61,7 @@ new Phaser.Game(config);
     (key) => (isAllEnabled = isAllEnabled && LOGGING_CONFIG[key])
   );
 
-  document.querySelector('#logging-controls').innerHTML = `<table>
+  document.querySelector('#logging-controls')!.innerHTML = `<table>
         <tr>
           <th>Logging Key</th>
           <th><input id="enable-all" type="checkbox" title="enable/disable all" ${
@@ -85,7 +85,7 @@ new Phaser.Game(config);
           .join('')}</table>`;
 
   document
-    .querySelector('#logging-controls')
+    .querySelector('#logging-controls')!
     .addEventListener('click', (event) => {
       const target = event.target as HTMLInputElement;
       if (target.type !== 'checkbox') return;

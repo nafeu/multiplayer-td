@@ -16,7 +16,6 @@ import {
   isTileFreeAtPosition,
 } from '../utils';
 
-import entities from '../entities';
 class Pointer extends Phaser.GameObjects.GameObject {
   indicator: Phaser.GameObjects.Graphics;
   indicatorDebugText: Phaser.GameObjects.Text;
@@ -59,6 +58,7 @@ class Pointer extends Phaser.GameObjects.GameObject {
   update() {
     this.indicator.clear();
     this.indicatorDebugText.setText('');
+    const entities = (this.scene as Game).entities;
 
     const selectedUnitCount = entities.selectedUnitGroup.size();
     const hasSelectedUnits = selectedUnitCount > 0;
@@ -68,7 +68,8 @@ class Pointer extends Phaser.GameObjects.GameObject {
         this.x,
         this.y,
         entities.selectedUnitGroup.getUnits(),
-        this.map
+        this.map,
+        entities.interaction
       );
 
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;

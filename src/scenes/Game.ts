@@ -4,9 +4,8 @@ import EasyStar from 'easystarjs';
 import { Unit, UnitType } from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
-import Pointer from '../entities/Pointer';
 
-import entities from '../entities';
+import { EntityManager, entityManagerFactory } from '../entities';
 
 import { title as PauseMenuScene } from './PauseMenu';
 import { title as GameOverScene } from './GameOver';
@@ -38,18 +37,26 @@ import {
 import { getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
+import { TileProperties } from '../entities/Map';
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
-  finder: EasyStar.js;
-  nextEnemy: number;
-  playerHUD: Phaser.GameObjects.Text;
-  pointer: Phaser.GameObjects.GameObject;
-  selection: Phaser.GameObjects.Rectangle;
-  tilemap: Phaser.Tilemaps.Tilemap;
-  tileset: Phaser.Tilemaps.Tileset;
-  enemyPath: Phaser.Curves.Path;
-  map: number[][];
+  /**
+   * TypeScript note:
+   * although these attributes are not initialized in the constructor,
+   * they are populated in `created` which is where Phaser starts
+   * letting you do cool stuff. So this should be okay...
+   * */
+  enemyPath!: Phaser.Curves.Path;
+  entities!: EntityManager;
+  finder!: EasyStar.js;
+  map!: number[][];
+  nextEnemy!: number;
+  playerHUD!: Phaser.GameObjects.Text;
+  pointer!: Phaser.GameObjects.GameObject;
+  selection!: Phaser.GameObjects.Rectangle;
+  tilemap!: Phaser.Tilemaps.Tilemap;
+  tileset!: Phaser.Tilemaps.Tileset;
 
   constructor() {
     super(title);
@@ -133,11 +140,13 @@ export class Game extends Phaser.Scene {
 
     const newMapGrid = this.tilemap.getLayer('Below Player').data.map((row) =>
       row.map((col) => {
-        if (col.properties.collision || col.properties.enemyPath) {
+        const properties = col.properties as TileProperties;
+
+        if (properties.collision || properties.enemyPath) {
           return INVALID_TURRENT_POSITION;
         }
 
-        if (col.properties.crossing) {
+        if (properties.crossing) {
           return UNIT_CROSSING;
         }
 
@@ -148,65 +157,36 @@ export class Game extends Phaser.Scene {
     this.map = newMapGrid;
 
     configurePathFindingGrid(this.finder, this.map);
-    entities.pointer = new Pointer(this);
     this.selection = addSelectionRectangle(this);
-
-    entities.unitGroup = this.add.group({
-      classType: Unit,
-      runChildUpdate: true,
-      maxSize: UNIT_SQUAD_SIZE,
-      // use createCallback to pass the scene for post initialization stuff
-      createCallback: function (unit: Unit) {
-        // console.log('### Unit Created', unit.id, unit);
-        // unit.postInitialize(map, getEnemy, () => entities.bullets.get());
-      },
-    });
-
-    entities.enemyGroup = this.physics.add.group({
-      classType: Enemy,
-      runChildUpdate: true,
-      createCallback: (enemy: Enemy) => {
-        enemy.setCorrectBoundingBox();
-      },
-      // removeCallback doesn't get triggered for recycled objects - don't rely on this for resets
-      // removeCallback: function (enemy: typeof Enemy) {
-      //   console.log('### Enemy Removed', enemy.id);
-      // },
-    });
 
     // value used to control spawn rate of enemies
     this.nextEnemy = 0;
 
-    entities.bullets = this.physics.add.group({
-      classType: Bullet,
-      createCallback: (bullet: Bullet) => {
-        bullet.setCorrectBoundingBox();
-      },
-      runChildUpdate: true,
-    });
+    this.entities = entityManagerFactory(this);
 
     const home = getPositionForTileCoordinates({ row: 12 + 2, col: 15 });
-    entities.homeBase = new HomeBase(this, home.x, home.y);
-    this.add.existing(entities.homeBase);
-    this.physics.add.existing(entities.homeBase);
+    this.entities.homeBase.setNewPosition(home.x, home.y);
+
+    this.add.existing(this.entities.homeBase);
+    this.physics.add.existing(this.entities.homeBase);
 
     // this is a type helper
     // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
     // and doesn't technically guarantee ordering of the objects being compared
     // so this wrapper is taking responsibility of this assumption
-    function wrappedDamageEnemy(enemy, bullet) {
+    function wrappedDamageEnemy(enemy: any, bullet: any) {
       return damageEnemy(enemy as Enemy, bullet as Bullet);
     }
 
     this.physics.add.overlap(
-      entities.enemyGroup,
-      entities.bullets,
+      this.entities.enemyGroup,
+      this.entities.bullets,
       wrappedDamageEnemy
     );
 
     this.physics.add.overlap(
-      entities.enemyGroup,
-      entities.homeBase,
+      this.entities.enemyGroup,
+      this.entities.homeBase,
       // nasty bug source: ordering of objects in callback is not guaranteed from registration order
       (homebase, enemy) => {
         if (!enemy.active) return;
@@ -225,10 +205,10 @@ export class Game extends Phaser.Scene {
 
     Object.keys(UnitType).forEach((unitType, idx) => {
       placeUnit(
+        this,
         70 + idx * TILE_SIZE,
         250,
-        unitType as keyof typeof UnitType,
-        this.map
+        unitType as keyof typeof UnitType
       );
     });
   }
@@ -259,7 +239,9 @@ export class Game extends Phaser.Scene {
         '',
         'Units:',
         '--------',
-        ...entities.unitGroup.getChildren().map((u: Unit) => u.toString()),
+        ...this.entities.unitGroup
+          .getChildren()
+          .map((u) => (u as Unit).toString()),
       ];
     }
     return [];
@@ -268,19 +250,19 @@ export class Game extends Phaser.Scene {
   update(time: number, delta: number) {
     this.playerHUD.setText([
       `Units Available: ${
-        UNIT_SQUAD_SIZE - entities.unitGroup.getTotalUsed()
+        UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${entities.selectedUnitGroup.size()}`,
-      `Formation: ${entities.interaction.formationShape}`,
+      `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
+      `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
-      // `${entities.homeBase.toString()}`,
+      // `${this.entities.homeBase.toString()}`,
     ]);
 
     const shouldSpawnEnemy = time > this.nextEnemy;
 
     if (shouldSpawnEnemy) {
-      const enemy = entities.enemyGroup.get() as Enemy | null;
+      const enemy = this.entities.enemyGroup.get() as Enemy | null;
 
       if (enemy) {
         enemy.setActive(true);
@@ -291,10 +273,10 @@ export class Game extends Phaser.Scene {
       }
     }
 
-    entities.pointer.update();
-    entities.homeBase.update(time, delta);
+    this.entities.pointer.update();
+    this.entities.homeBase.update(time, delta);
 
-    if (entities.homeBase.hp === 0) {
+    if (this.entities.homeBase.hp === 0) {
       sendUiAlert({ message: 'GAME OVER' });
       this.scene.pause();
       this.scene.start(GameOverScene);
@@ -314,11 +296,12 @@ export class Game extends Phaser.Scene {
       const validUnitFormation = getValidUnitFormation(
         pointer.x,
         pointer.y,
-        entities.selectedUnitGroup.getUnits(),
-        this.map
+        this.entities.selectedUnitGroup.getUnits(),
+        this.map,
+        this.entities.interaction
       );
 
-      const selectedUnitCount = entities.selectedUnitGroup.size();
+      const selectedUnitCount = this.entities.selectedUnitGroup.size();
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
       if (
@@ -327,7 +310,7 @@ export class Game extends Phaser.Scene {
       ) {
         this.finder.setGrid(this.map);
 
-        entities.selectedUnitGroup
+        this.entities.selectedUnitGroup
           .getUnits()
           .forEach((selectedUnit: Unit, index) => {
             const originY = Math.floor(selectedUnit.y / TILE_SIZE);
@@ -370,7 +353,7 @@ export class Game extends Phaser.Scene {
   };
 
   handlePointerUp = (pointer: Phaser.Input.Pointer) => {
-    const allUnits = entities.unitGroup.getChildren() as Array<Unit>;
+    const allUnits = this.entities.unitGroup.getChildren() as Array<Unit>;
     const isBoxSelection =
       this.selection.width !== 0 || this.selection.height !== 0;
 
@@ -406,10 +389,10 @@ export class Game extends Phaser.Scene {
         pointer.event as unknown as Phaser.Input.Keyboard.Key
       ).shiftKey;
       if (shiftKeyIsNotPressed) {
-        entities.selectedUnitGroup.clearUnits();
+        this.entities.selectedUnitGroup.clearUnits();
       }
 
-      selected.forEach(entities.selectedUnitGroup.addUnit);
+      selected.forEach(this.entities.selectedUnitGroup.addUnit);
 
       this.selection.width = 0;
       this.selection.height = 0;
@@ -422,14 +405,14 @@ export class Game extends Phaser.Scene {
         hasNotClickedAnyUnits && !pointer.rightButtonReleased();
 
       if (hasClickedOnEmptySpace) {
-        entities.selectedUnitGroup.clearUnits();
+        this.entities.selectedUnitGroup.clearUnits();
       }
     }
   };
 
   handleKeyDown = (event: { key: string }) => {
     if (event.key === 'a') {
-      rotateFormationShape();
+      rotateFormationShape(this.entities.interaction);
     }
   };
 }
@@ -457,19 +440,20 @@ function drawLegacyEnemyPath(scene: Phaser.Scene): Phaser.Curves.Path {
 }
 
 function placeUnit(
+  scene: Game,
   x: number,
   y: number,
-  type = 'NORMAL' as keyof typeof UnitType,
-  map: number[][]
+  type = 'NORMAL' as keyof typeof UnitType
 ) {
+  const map = scene.map;
   const row = Math.floor(y / TILE_SIZE);
   const column = Math.floor(x / TILE_SIZE);
 
   if (map[row][column] === VALID_UNIT_POSITION) {
     const UnitConstructor = UnitType[type];
-    const unit = new UnitConstructor(entities.unitGroup.scene as Game);
-    entities.unitGroup.add(unit);
-    entities.unitGroup.scene.add.existing(unit);
+    const unit = new UnitConstructor(scene.entities.unitGroup.scene as Game);
+    scene.entities.unitGroup.add(unit);
+    scene.entities.unitGroup.scene.add.existing(unit);
 
     if (unit) {
       unit.setActive(true);

@@ -42,16 +42,16 @@ export const STATES = {
 const unitHasQueuedPath = (context: Context) => context.unit.hasQueuedPath();
 
 const PLACEHOLDER_ACTIONS = {
-  queueNewMove: (context, event: AnyEventObject) => {
+  queueNewMove: (context: Context, event: AnyEventObject) => {
     logger.log('queueing path', event.path);
   },
-  startNewQueuedMove: (context, event) => {
+  startNewQueuedMove: (context: Context, event: AnyEventObject) => {
     logger.log('start on new queued path');
   },
-  prepareToMove: (context, event) => {
+  prepareToMove: (context: Context, event: AnyEventObject) => {
     logger.log('preparing to move from seiged position');
   },
-  queueTransitionToMove: (context, event) => {
+  queueTransitionToMove: (context: Context, event: AnyEventObject) => {
     logger.log('queuing delayed transition using timer');
     setTimeout(() => {
       logger.log(
@@ -59,13 +59,13 @@ const PLACEHOLDER_ACTIONS = {
       );
     }, UNIT_PREPARING_ANIMATION_DELAY_MS);
   },
-  startMovingToDestination: (context, event) => {
+  startMovingToDestination: (context: Context, event: AnyEventObject) => {
     logger.log('moving to position');
   },
-  prepareToSeige: (context, event) => {
+  prepareToSeige: (context: Context, event: AnyEventObject) => {
     logger.log('preparing to seiged');
   },
-  queueTransitionToSeige: (context, event) => {
+  queueTransitionToSeige: (context: Context, event: AnyEventObject) => {
     logger.log('queuing delayed transition using timer');
     setTimeout(() => {
       logger.log(
@@ -73,13 +73,13 @@ const PLACEHOLDER_ACTIONS = {
       );
     }, UNIT_PREPARING_ANIMATION_DELAY_MS);
   },
-  updateQueuedDestination: (context, event) => {
+  updateQueuedDestination: (context: Context, event: AnyEventObject) => {
     logger.log('queueing new position');
   },
-  updateDestination: (context, event) => {
+  updateDestination: (context: Context, event: AnyEventObject) => {
     logger.log('moving towards new position');
   },
-  transitionToSiege: (context, event) => {
+  transitionToSiege: (context: Context, event: AnyEventObject) => {
     logger.log('transition to siege');
   },
 };

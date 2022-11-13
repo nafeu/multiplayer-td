@@ -55,6 +55,7 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     const shouldDeactivateEnemy = this.hp <= 0;
 
     if (shouldDeactivateEnemy) {
+      (this.scene as Game).onEnemyKilled(this);
       this.handleDeadOrRemoved();
     }
   }

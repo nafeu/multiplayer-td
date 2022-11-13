@@ -40,6 +40,15 @@ import { sliceFromTexture } from '../texture-utils';
 import { TileProperties } from '../entities/Map';
 
 export const title = 'game';
+
+class LevelConfig {
+  tilemapKey: string;
+  MAP_LAYER_KEY = 'Below Player';
+
+  constructor(tilemapKey: string) {
+    this.tilemapKey = tilemapKey;
+  }
+}
 export class Game extends Phaser.Scene {
   /**
    * TypeScript note:
@@ -54,9 +63,15 @@ export class Game extends Phaser.Scene {
   nextEnemy!: number;
   playerHUD!: Phaser.GameObjects.Text;
   pointer!: Phaser.GameObjects.GameObject;
+  scoreboard!: Phaser.GameObjects.Text;
   selection!: Phaser.GameObjects.Rectangle;
   tilemap!: Phaser.Tilemaps.Tilemap;
   tileset!: Phaser.Tilemaps.Tileset;
+
+  currentLevelIdx = 0;
+  levels = [new LevelConfig('level-0')];
+
+  kills = 0;
 
   constructor() {
     super(title);
@@ -88,7 +103,75 @@ export class Game extends Phaser.Scene {
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // load the JSON file
-    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj');
+    this.levels.forEach((config) => {
+      this.load.tilemapTiledJSON(
+        config.tilemapKey,
+        `assets/${config.tilemapKey}.tmj`
+      );
+    });
+  }
+
+  currentLevelConfig() {
+    return this.levels[this.currentLevelIdx];
+  }
+
+  loadCurrentLevel() {
+    const levelConfig = this.currentLevelConfig();
+
+    this.enemyPath = drawLegacyEnemyPath(this);
+
+    this.tilemap = this.make.tilemap({ key: levelConfig.tilemapKey });
+    this.tileset = this.tilemap.addTilesetImage('grass-biome');
+    this.tilemap.createLayer('Below Player', this.tileset);
+
+    const newMapGrid = this.tilemap.getLayer('Below Player').data.map((row) =>
+      row.map((col) => {
+        const properties = col.properties as TileProperties;
+
+        if (properties.collision || properties.enemyPath) {
+          return INVALID_TURRENT_POSITION;
+        }
+
+        if (properties.crossing) {
+          return UNIT_CROSSING;
+        }
+
+        return VALID_UNIT_POSITION;
+      })
+    );
+
+    this.map = newMapGrid;
+
+    configurePathFindingGrid(this.finder, this.map);
+
+    // value used to control spawn rate of enemies
+    this.nextEnemy = 0;
+
+    // TODO: homebase position comes from configuration
+    const home = getPositionForTileCoordinates({ row: 12 + 2, col: 15 });
+    this.entities.homeBase.setNewPosition(home.x, home.y);
+
+    // TODO: starting positions come from configuration
+    Object.keys(UnitType).forEach((unitType, idx) => {
+      placeUnit(
+        this,
+        70 + idx * TILE_SIZE,
+        250,
+        unitType as keyof typeof UnitType
+      );
+    });
+  }
+
+  loadAdditionalTextures() {
+    // TODO: remove after we figure out objects for map
+    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
+      sliceFromTexture(
+        this,
+        HOMEBASE_TEXTURE_NAME,
+        'grass-biome',
+        32 * 3,
+        32 * 16
+      );
   }
 
   create() {
@@ -122,52 +205,13 @@ export class Game extends Phaser.Scene {
       this
     );
 
-    this.enemyPath = drawLegacyEnemyPath(this);
+    this.loadAdditionalTextures();
 
-    // TODO: remove after we figure out objects for map
-    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
-      sliceFromTexture(
-        this,
-        HOMEBASE_TEXTURE_NAME,
-        'grass-biome',
-        32 * 3,
-        32 * 16
-      );
-
-    this.tilemap = this.make.tilemap({ key: 'level-0' });
-    this.tileset = this.tilemap.addTilesetImage('grass-biome');
-    this.tilemap.createLayer('Below Player', this.tileset);
-
-    const newMapGrid = this.tilemap.getLayer('Below Player').data.map((row) =>
-      row.map((col) => {
-        const properties = col.properties as TileProperties;
-
-        if (properties.collision || properties.enemyPath) {
-          return INVALID_TURRENT_POSITION;
-        }
-
-        if (properties.crossing) {
-          return UNIT_CROSSING;
-        }
-
-        return VALID_UNIT_POSITION;
-      })
-    );
-
-    this.map = newMapGrid;
-
-    configurePathFindingGrid(this.finder, this.map);
     this.selection = addSelectionRectangle(this);
-
-    // value used to control spawn rate of enemies
-    this.nextEnemy = 0;
 
     this.entities = entityManagerFactory(this);
 
-    const home = getPositionForTileCoordinates({ row: 12 + 2, col: 15 });
-    this.entities.homeBase.setNewPosition(home.x, home.y);
-
-    this.add.existing(this.entities.homeBase);
+    this.add.existing(this.entities.homeBase).setDepth(1);
     this.physics.add.existing(this.entities.homeBase);
 
     // this is a type helper
@@ -197,20 +241,22 @@ export class Game extends Phaser.Scene {
       }
     );
 
+    this.scoreboard = this.add
+      .text(5, 5, `Kills: 0`, {
+        align: 'left',
+      })
+      .setDepth(1) // above the current depth -- should move to a constant
+      .setOrigin(0, 0);
+
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
         align: 'right',
       })
+      .setDepth(1) // above the current depth -- should move to a constant
       .setOrigin(1, 0);
 
-    Object.keys(UnitType).forEach((unitType, idx) => {
-      placeUnit(
-        this,
-        70 + idx * TILE_SIZE,
-        250,
-        unitType as keyof typeof UnitType
-      );
-    });
+    // Scene is initialized at the correct level.
+    this.loadCurrentLevel();
   }
 
   KEYS_TO_WATCH = ['SHIFT', 'CTRL'];
@@ -247,12 +293,19 @@ export class Game extends Phaser.Scene {
     return [];
   }
 
+  onEnemyKilled(enemy: Enemy) {
+    this.kills += 1;
+  }
+
   update(time: number, delta: number) {
+    this.scoreboard.setText(`Kills: ${this.kills}`);
+
     this.playerHUD.setText([
+      `Level: ${this.currentLevelConfig().tilemapKey}`,
       `Units Available: ${
         UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
+      // `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
       `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),

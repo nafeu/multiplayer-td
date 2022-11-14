@@ -9,5 +9,11 @@ type TileCoordinates = {
   col: number;
 };
 
+type TileProperties = {
+  collision: boolean,
+  enemyPath: boolean,
+  crossing: boolean
+}
+
 // should be "NonNegativeInteger" but that doesn't exist
 type MapPath = Array<{ x: number; y: number }>;

@@ -147,6 +147,8 @@ export class Unit extends Phaser.GameObjects.Image {
     const enemy = this.getEnemy(this.x, this.y, this.getFireRange());
 
     if (enemy) {
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
+      this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
       this.shootBullet(enemy);
     }
   }

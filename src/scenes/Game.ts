@@ -4,6 +4,7 @@ import EasyStar from 'easystarjs';
 import { Unit, UnitType } from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
+import Pointer from '../entities/Pointer';
 
 import { EntityManager, entityManagerFactory } from '../entities';
 
@@ -19,21 +20,23 @@ import {
 } from '../utils';
 
 import {
-  SPRITE_ATLAS_NAME,
   BOARD_HEIGHT,
   BOARD_WIDTH,
-  TILE_SIZE,
-  UNIT_SQUAD_SIZE,
+  ENEMY_PATH,
   ENEMY_SPAWN_RATE_MS,
-  VALID_UNIT_POSITION,
+  GLOBAL_KEYS__MENU_KEY,
+  INVALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
-  GLOBAL_KEYS__MENU_KEY,
+  SPRITE_ATLAS_NAME,
+  TILE_SIZE,
   UNIT_CROSSING,
-  INVALID_TURRENT_POSITION,
   HOMEBASE_TEXTURE_NAME,
+  UNIT_SQUAD_SIZE,
+  VALID_UNIT_POSITION
 } from '../constants';
+
 import { getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
@@ -57,6 +60,8 @@ export class Game extends Phaser.Scene {
   selection!: Phaser.GameObjects.Rectangle;
   tilemap!: Phaser.Tilemaps.Tilemap;
   tileset!: Phaser.Tilemaps.Tileset;
+  unitPathfinder!: EasyStar.js;
+  enemyPathfinder!: EasyStar.js;
 
   constructor() {
     super(title);
@@ -92,7 +97,8 @@ export class Game extends Phaser.Scene {
   }
 
   create() {
-    this.finder = new EasyStar.js();
+    this.unitPathfinder = new EasyStar.js();
+    this.enemyPathfinder = new EasyStar.js();
 
     disableBrowserRightClickMenu(this);
 
@@ -122,28 +128,22 @@ export class Game extends Phaser.Scene {
       this
     );
 
-    this.enemyPath = drawLegacyEnemyPath(this);
-
-    // TODO: remove after we figure out objects for map
-    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
-      sliceFromTexture(
-        this,
-        HOMEBASE_TEXTURE_NAME,
-        'grass-biome',
-        32 * 3,
-        32 * 16
-      );
-
     this.tilemap = this.make.tilemap({ key: 'level-0' });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');
     this.tilemap.createLayer('Below Player', this.tileset);
 
-    const newMapGrid = this.tilemap.getLayer('Below Player').data.map((row) =>
-      row.map((col) => {
+    const belowPlayerLayer = this.tilemap.getLayer('Below Player');
+
+    const belowPlayerGrid = belowPlayerLayer.data.map((row) =>
+      row.map((col: Phaser.Tilemaps.Tile) => {
         const properties = col.properties as TileProperties;
 
-        if (properties.collision || properties.enemyPath) {
-          return INVALID_TURRENT_POSITION;
+        if (properties.collision) {
+          return INVALID_UNIT_POSITION;
+        }
+
+        if (properties.enemyPath) {
+          return ENEMY_PATH;
         }
 
         if (properties.crossing) {
@@ -154,9 +154,18 @@ export class Game extends Phaser.Scene {
       })
     );
 
-    this.map = newMapGrid;
+    this.map = belowPlayerGrid;
 
-    configurePathFindingGrid(this.finder, this.map);
+    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
+      sliceFromTexture(
+        this,
+        HOMEBASE_TEXTURE_NAME,
+        'grass-biome',
+        32 * 3,
+        32 * 16
+      );
+
+
     this.selection = addSelectionRectangle(this);
 
     // value used to control spawn rate of enemies
@@ -164,11 +173,14 @@ export class Game extends Phaser.Scene {
 
     this.entities = entityManagerFactory(this);
 
-    const home = getPositionForTileCoordinates({ row: 12 + 2, col: 15 });
-    this.entities.homeBase.setNewPosition(home.x, home.y);
+    this.entities.pointer = new Pointer(this);
 
     this.add.existing(this.entities.homeBase);
     this.physics.add.existing(this.entities.homeBase);
+
+    configureUnitPathfindingGrid(this.unitPathfinder, this.map);
+    configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
+    configureHomeBase(this);
 
     // this is a type helper
     // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
@@ -259,7 +271,8 @@ export class Game extends Phaser.Scene {
       // `${this.entities.homeBase.toString()}`,
     ]);
 
-    const shouldSpawnEnemy = time > this.nextEnemy;
+    const shouldSpawnEnemy =
+      time > this.nextEnemy && this.enemyPath !== undefined;
 
     if (shouldSpawnEnemy) {
       const enemy = this.entities.enemyGroup.get() as Enemy | null;
@@ -308,7 +321,7 @@ export class Game extends Phaser.Scene {
         hasSpaceForUnits &&
         isTileFreeAtPosition(pointer.x, pointer.y, this.map)
       ) {
-        this.finder.setGrid(this.map);
+        this.unitPathfinder.setGrid(this.map);
 
         this.entities.selectedUnitGroup
           .getUnits()
@@ -318,7 +331,7 @@ export class Game extends Phaser.Scene {
 
             const validMove = validUnitFormation[index];
 
-            this.finder.findPath(
+            this.unitPathfinder.findPath(
               originX,
               originY,
               validMove.col,
@@ -332,7 +345,7 @@ export class Game extends Phaser.Scene {
               }
             );
 
-            this.finder.calculate();
+            this.unitPathfinder.calculate();
           });
       }
     } else {
@@ -416,25 +429,20 @@ export class Game extends Phaser.Scene {
     }
   };
 }
-
-function drawLegacyEnemyPath(scene: Phaser.Scene): Phaser.Curves.Path {
+function drawEnemyPath(scene: Game, enemyPath: MapPath): Phaser.Curves.Path {
   const HALF_TILE = TILE_SIZE / 2;
-  const lineWidth = 2;
-  const lineOffset = lineWidth / 2;
 
   const path = scene.add.path(
-    3 * TILE_SIZE - HALF_TILE - lineOffset,
-    -TILE_SIZE
+    enemyPath[0].x * TILE_SIZE + HALF_TILE,
+    enemyPath[0].y * TILE_SIZE + HALF_TILE
   );
-  path.lineTo(
-    3 * TILE_SIZE - HALF_TILE - lineOffset,
-    6 * TILE_SIZE - HALF_TILE - lineOffset
-  );
-  path.lineTo(
-    15 * TILE_SIZE - HALF_TILE - lineOffset,
-    6 * TILE_SIZE - HALF_TILE - lineOffset
-  );
-  path.lineTo(15 * TILE_SIZE - HALF_TILE - lineOffset, BOARD_HEIGHT);
+
+  for (let i = 1; i < enemyPath.length; i++) {
+    path.lineTo(
+      enemyPath[i].x * TILE_SIZE + HALF_TILE,
+      enemyPath[i].y * TILE_SIZE + HALF_TILE
+    );
+  }
 
   return path;
 }
@@ -479,13 +487,55 @@ function disableBrowserRightClickMenu(scene: Phaser.Scene) {
   scene.input.mouse.disableContextMenu();
 }
 
-function configurePathFindingGrid(finder: EasyStar.js, map: number[][]) {
-  finder.setGrid(map);
-  finder.setAcceptableTiles([
+function configureUnitPathfindingGrid(
+  unitPathfinder: EasyStar.js,
+  map: number[][]
+) {
+  unitPathfinder.setGrid(map);
+  unitPathfinder.setAcceptableTiles([
     VALID_UNIT_POSITION,
     OCCUPIED_UNIT_POSITION,
     UNIT_CROSSING,
   ]);
+}
+
+function configureEnemyPathfinding(
+  enemyPathfinder: EasyStar.js,
+  map: number[][],
+  scene: Game
+) {
+  enemyPathfinder.setGrid(map);
+  enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
+
+  const { enemyStartCoordinates, enemyEndCoordinates } =
+    getEnemyStartEndCoordinates(map);
+
+  enemyPathfinder.findPath(
+    enemyStartCoordinates.col,
+    enemyStartCoordinates.row,
+    enemyEndCoordinates.col,
+    enemyEndCoordinates.row,
+    (path) => {
+      if (path) {
+        scene.enemyPath = drawEnemyPath(scene, path);
+      } else {
+        sendUiAlert({ invalidCommand: `Path not found.` });
+      }
+    }
+  );
+
+  enemyPathfinder.calculate();
+}
+
+function configureHomeBase(scene: Game) {
+  const { enemyEndCoordinates } = getEnemyStartEndCoordinates(scene.map);
+
+  const { x, y } = getPositionForTileCoordinates({
+    row: enemyEndCoordinates.row,
+    col: enemyEndCoordinates.col
+  });
+
+  scene.entities.homeBase.setNewPosition(x, y);
 }
 
 function addSelectionRectangle(scene: Phaser.Scene) {
@@ -499,9 +549,27 @@ function addSelectionRectangle(scene: Phaser.Scene) {
   );
 }
 
-export type MapPath = Array<{ x: number; y: number }>;
+function getEnemyStartEndCoordinates(map: number[][]) {
+  const [enemyStartCoordinates, enemyEndCoordinates] = map
+    .map((row, y) => {
+      return row.map((col, x) => ({
+        x,
+        y,
+        isEnemyPathTile: col === ENEMY_PATH,
+      }));
+    })
+    .flat()
+    .filter(({ isEnemyPathTile }) => isEnemyPathTile)
+    .filter(({ x, y }) => {
+      const maxRowIndex = map.length - 1;
+      const maxColIndex = map[0].length - 1;
 
-export type TileCoordinates = {
-  i: number;
-  j: number;
-};
+      return x === 0 || y === 0 || x === maxColIndex || y === maxRowIndex;
+    })
+    .map(({ x: col, y: row }) => ({ row, col }));
+
+  return {
+    enemyStartCoordinates,
+    enemyEndCoordinates,
+  };
+}

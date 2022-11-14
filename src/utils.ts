@@ -44,7 +44,7 @@ export const getPositionForTileCoordinates = ({
   row,
   col,
 }: TileCoordinates) => {
-  return { x: getPositionByTile(row), y: getPositionByTile(col) };
+  return { x: getPositionByTile(col), y: getPositionByTile(row) };
 };
 
 /*

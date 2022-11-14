@@ -3,13 +3,15 @@ import { Game } from '../scenes/Game';
 
 import HealthBar from './HealthBar';
 
-import { generateId } from '../utils';
+import { generateId, getPositionByTile } from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
   ENEMY_IMG_NAME,
   ENEMY_HP,
   ENEMY_SPEED,
+  TILE_SIZE,
+  UNIT_SNAP_DISTANCE,
 } from '../constants';
 
 class Enemy extends Phaser.Physics.Arcade.Image {
@@ -72,7 +74,7 @@ class Enemy extends Phaser.Physics.Arcade.Image {
 
   getPositionAfterDelta(delta: number) {
     return this.enemyPath.getPoint(
-      this.follower.t + ENEMY_SPEED * delta,
+      Math.min(this.follower.t + ENEMY_SPEED * delta, 1),
       this.follower.vec
     );
   }

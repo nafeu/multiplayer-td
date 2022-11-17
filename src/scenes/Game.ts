@@ -34,13 +34,27 @@ import {
   UNIT_CROSSING,
   HOMEBASE_TEXTURE_NAME,
   UNIT_SQUAD_SIZE,
-  VALID_UNIT_POSITION
+  VALID_UNIT_POSITION,
 } from '../constants';
 
-import { getLoggingConfig } from '../logger';
+import { getLogger, getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
 import { TileProperties } from '../entities/Map';
+
+class LevelConfig {
+  tilemapKey: string;
+  totalEnemies: number;
+  MAP_LAYER_KEY = 'Below Player';
+
+  constructor(tilemapKey: string) {
+    this.tilemapKey = tilemapKey;
+
+    this.totalEnemies = 4;
+  }
+}
+
+const logger = getLogger('GAME_SCENE');
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
@@ -51,23 +65,37 @@ export class Game extends Phaser.Scene {
    * letting you do cool stuff. So this should be okay...
    * */
   enemyPath!: Phaser.Curves.Path;
+  enemiesSpawned = 0;
   entities!: EntityManager;
   finder!: EasyStar.js;
+  kills = 0;
   map!: number[][];
   nextEnemy!: number;
   playerHUD!: Phaser.GameObjects.Text;
   pointer!: Phaser.GameObjects.GameObject;
+  scoreboard!: Phaser.GameObjects.Text;
   selection!: Phaser.GameObjects.Rectangle;
   tilemap!: Phaser.Tilemaps.Tilemap;
   tileset!: Phaser.Tilemaps.Tileset;
   unitPathfinder!: EasyStar.js;
   enemyPathfinder!: EasyStar.js;
 
+  currentLevel: number;
+  levelConfigurations: LevelConfig[];
+
   constructor() {
+    logger.log('### INIT ###');
     super(title);
+
+    this.currentLevel = 0;
+    this.levelConfigurations = [
+      new LevelConfig('level-0'),
+      new LevelConfig('level-1'),
+    ];
   }
 
   preload() {
+    logger.log('### PRELOAD ###');
     // Why so convoluted?
     // - Vite (our bundler) uses BASE_URL, but bun does not
     // - bun prefers to use public/ dir for assets https://github.com/oven-sh/bun#using-bun-with-single-page-apps
@@ -93,14 +121,103 @@ export class Game extends Phaser.Scene {
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // load the JSON file
-    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj');
+    this.levelConfigurations.forEach((config) => {
+      this.load.tilemapTiledJSON(
+        config.tilemapKey,
+        `assets/${config.tilemapKey}.tmj`
+      );
+    });
+  }
+
+  /**
+   * Used for loading additional textures that are dependent on `#preload` completion
+   */
+  loadAdditionalTextures() {
+    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
+      sliceFromTexture(
+        this,
+        HOMEBASE_TEXTURE_NAME,
+        'grass-biome',
+        32 * 3,
+        32 * 16
+      );
+  }
+
+  currentConfiguration() {
+    return this.levelConfigurations[this.currentLevel];
+  }
+
+  loadCurrentLevel() {
+    const config = this.currentConfiguration();
+
+    this.tilemap = this.make.tilemap({ key: config.tilemapKey });
+    this.tileset = this.tilemap.addTilesetImage('grass-biome');
+    this.tilemap.createLayer(config.MAP_LAYER_KEY, this.tileset);
+
+    const belowPlayerLayer = this.tilemap.getLayer(config.MAP_LAYER_KEY);
+
+    this.map = belowPlayerLayer.data.map((row) =>
+      row.map<number>((col: Phaser.Tilemaps.Tile) => {
+        const properties = col.properties as TileProperties;
+
+        if (properties.collision) {
+          return INVALID_UNIT_POSITION;
+        }
+
+        if (properties.enemyPath) {
+          return ENEMY_PATH;
+        }
+
+        if (properties.crossing) {
+          return UNIT_CROSSING;
+        }
+
+        return VALID_UNIT_POSITION;
+      })
+    );
+
+    // value used to control spawn rate of enemies
+    // initialize with delay to let some level intro viz to run
+    // Note: on scene restarts, the clock does not reset
+    this.nextEnemy = this.time.now + 4_000;
+    this.enemiesSpawned = 0;
+
+    this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
+    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
+    this.configureHomeBase();
+
+    // Level Change Notification
+    const verticalPosition = (BOARD_HEIGHT * 2) / 5;
+    const initialY = BOARD_HEIGHT / 2;
+
+    const text = this.add
+      .text(BOARD_WIDTH / 2, initialY, `Level ${this.currentLevel + 1}`, {
+        align: 'center',
+        fontSize: '32px',
+      })
+      .setAlpha(0)
+      .setOrigin(0.5, 0.5);
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 1, duration: 2000, ease: 'Power1' },
+      y: { value: verticalPosition, duration: 3000, ease: 'Power1' },
+    });
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 0, delay: 2000, duration: 1000, ease: 'Power1' },
+    });
   }
 
   create() {
+    logger.log('### CREATE ###');
+    this.loadAdditionalTextures();
+
     this.unitPathfinder = new EasyStar.js();
     this.enemyPathfinder = new EasyStar.js();
 
-    disableBrowserRightClickMenu(this);
+    this.disableBrowserRightClickMenu(this);
 
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
@@ -128,48 +245,7 @@ export class Game extends Phaser.Scene {
       this
     );
 
-    this.tilemap = this.make.tilemap({ key: 'level-0' });
-    this.tileset = this.tilemap.addTilesetImage('grass-biome');
-    this.tilemap.createLayer('Below Player', this.tileset);
-
-    const belowPlayerLayer = this.tilemap.getLayer('Below Player');
-
-    const belowPlayerGrid = belowPlayerLayer.data.map((row) =>
-      row.map((col: Phaser.Tilemaps.Tile) => {
-        const properties = col.properties as TileProperties;
-
-        if (properties.collision) {
-          return INVALID_UNIT_POSITION;
-        }
-
-        if (properties.enemyPath) {
-          return ENEMY_PATH;
-        }
-
-        if (properties.crossing) {
-          return UNIT_CROSSING;
-        }
-
-        return VALID_UNIT_POSITION;
-      })
-    );
-
-    this.map = belowPlayerGrid;
-
-    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
-      sliceFromTexture(
-        this,
-        HOMEBASE_TEXTURE_NAME,
-        'grass-biome',
-        32 * 3,
-        32 * 16
-      );
-
-
-    this.selection = addSelectionRectangle(this);
-
-    // value used to control spawn rate of enemies
-    this.nextEnemy = 0;
+    this.selection = this.addSelectionRectangle();
 
     this.entities = entityManagerFactory(this);
 
@@ -178,22 +254,17 @@ export class Game extends Phaser.Scene {
     this.add.existing(this.entities.homeBase);
     this.physics.add.existing(this.entities.homeBase);
 
-    configureUnitPathfindingGrid(this.unitPathfinder, this.map);
-    configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
-    configureHomeBase(this);
-
-    // this is a type helper
-    // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
-    // and doesn't technically guarantee ordering of the objects being compared
-    // so this wrapper is taking responsibility of this assumption
-    function wrappedDamageEnemy(enemy: any, bullet: any) {
-      return damageEnemy(enemy as Enemy, bullet as Bullet);
-    }
-
+    // COLLISION PHYSICS
     this.physics.add.overlap(
       this.entities.enemyGroup,
       this.entities.bullets,
-      wrappedDamageEnemy
+      (enemy: any, bullet: any) => {
+        // this is a type helper
+        // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
+        // and doesn't technically guarantee ordering of the objects being compared
+        // so this wrapper is taking responsibility of this assumption
+        return this.damageEnemy(enemy as Enemy, bullet as Bullet);
+      }
     );
 
     this.physics.add.overlap(
@@ -209,15 +280,19 @@ export class Game extends Phaser.Scene {
       }
     );
 
+    // GAMEPLAY OVERLAYS
+    this.scoreboard = this.add.text(5, 5, `Score: 0`).setDepth(1); //.setOrigin(0, 0);
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
         align: 'right',
       })
+      .setDepth(1)
       .setOrigin(1, 0);
 
+    this.loadCurrentLevel();
+
     Object.keys(UnitType).forEach((unitType, idx) => {
-      placeUnit(
-        this,
+      this.placeUnit(
         70 + idx * TILE_SIZE,
         250,
         unitType as keyof typeof UnitType
@@ -260,19 +335,23 @@ export class Game extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
+    this.scoreboard.setText(`Score: ${this.kills}`);
     this.playerHUD.setText([
+      `Level: ${this.currentLevel + 1}`,
+      // `Next Enemy: ${(this.nextEnemy - time).toFixed()}`,
       `Units Available: ${
         UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
       }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
+      // `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
       `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
-      // `${this.entities.homeBase.toString()}`,
+      `${this.entities.homeBase.toString()}`,
     ]);
 
     const shouldSpawnEnemy =
-      time > this.nextEnemy && this.enemyPath !== undefined;
+      time > this.nextEnemy &&
+      this.enemiesSpawned < this.currentConfiguration().totalEnemies;
 
     if (shouldSpawnEnemy) {
       const enemy = this.entities.enemyGroup.get() as Enemy | null;
@@ -280,19 +359,57 @@ export class Game extends Phaser.Scene {
       if (enemy) {
         enemy.setActive(true);
         enemy.setVisible(true);
-        enemy.startOnPath();
+        enemy.startOnPath(this.enemyPath);
 
         this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
+        this.enemiesSpawned += 1;
       }
     }
 
     this.entities.pointer.update();
     this.entities.homeBase.update(time, delta);
 
+    if (
+      this.enemiesSpawned >= this.currentConfiguration().totalEnemies &&
+      !this.entities.enemyGroup.getFirstAlive()
+    ) {
+      sendUiAlert({ message: 'NEXT LEVEL' });
+      // so any enroute enemies are cleaned up before next level starts
+      this.entities.enemyGroup.setActive(false);
+      this.entities.enemyGroup.setVisible(false);
+
+      if (this.currentLevel >= this.levelConfigurations.length - 1) {
+        sendUiAlert({ message: 'YOU WON' });
+        this.currentLevel = 0;
+        this.scene.pause();
+        this.scene.start(GameOverScene);
+      } else {
+        this.currentLevel += 1;
+        // #restart triggers starts with the preload method on this scene
+        this.scene.restart();
+      }
+    }
+
     if (this.entities.homeBase.hp === 0) {
+      logger.log('### TRIGGERING DEATH LOGIC ###');
       sendUiAlert({ message: 'GAME OVER' });
+      this.currentLevel = 0;
       this.scene.pause();
       this.scene.start(GameOverScene);
+    }
+  }
+
+  damageEnemy(enemy: Enemy, bullet: Bullet) {
+    const ifEnemyAndBulletAlive = enemy.active && bullet.active;
+
+    if (ifEnemyAndBulletAlive) {
+      bullet.setActive(false);
+      bullet.setVisible(false);
+
+      enemy.receiveDamage(bullet.getDamage());
+      if (!enemy.active) {
+        this.kills += 1;
+      }
     }
   }
 
@@ -428,125 +545,104 @@ export class Game extends Phaser.Scene {
       rotateFormationShape(this.entities.interaction);
     }
   };
-}
-function drawEnemyPath(scene: Game, enemyPath: MapPath): Phaser.Curves.Path {
-  const HALF_TILE = TILE_SIZE / 2;
 
-  const path = scene.add.path(
-    enemyPath[0].x * TILE_SIZE + HALF_TILE,
-    enemyPath[0].y * TILE_SIZE + HALF_TILE
-  );
+  disableBrowserRightClickMenu() {
+    this.input.mouse.disableContextMenu();
+  }
 
-  for (let i = 1; i < enemyPath.length; i++) {
-    path.lineTo(
-      enemyPath[i].x * TILE_SIZE + HALF_TILE,
-      enemyPath[i].y * TILE_SIZE + HALF_TILE
+  configureUnitPathfindingGrid(unitPathfinder: EasyStar.js, map: number[][]) {
+    unitPathfinder.setGrid(map);
+    unitPathfinder.setAcceptableTiles([
+      VALID_UNIT_POSITION,
+      OCCUPIED_UNIT_POSITION,
+      UNIT_CROSSING,
+    ]);
+  }
+
+  configureEnemyPathfinding(enemyPathfinder: EasyStar.js, map: number[][]) {
+    enemyPathfinder.setGrid(map);
+    enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
+
+    const { enemyStartCoordinates, enemyEndCoordinates } =
+      getEnemyStartEndCoordinates(map);
+
+    enemyPathfinder.enableSync();
+    enemyPathfinder.findPath(
+      enemyStartCoordinates.col,
+      enemyStartCoordinates.row,
+      enemyEndCoordinates.col,
+      enemyEndCoordinates.row,
+      (path) => {
+        if (path) {
+          this.enemyPath = this.drawEnemyPath(path);
+        } else {
+          sendUiAlert({ invalidCommand: `Path not found.` });
+        }
+      }
+    );
+    enemyPathfinder.calculate();
+
+    enemyPathfinder.disableSync();
+  }
+
+  configureHomeBase() {
+    const { enemyEndCoordinates } = getEnemyStartEndCoordinates(this.map);
+
+    const { x, y } = getPositionForTileCoordinates({
+      row: enemyEndCoordinates.row,
+      col: enemyEndCoordinates.col,
+    });
+
+    this.entities.homeBase.setNewPosition(x, y).setDepth(1);
+  }
+
+  addSelectionRectangle() {
+    return this.add.rectangle(
+      0,
+      0,
+      0,
+      0,
+      SELECTION_RECTANGLE_COLOR,
+      SELECTION_RECTANGLE_OPACITY
     );
   }
 
-  return path;
-}
+  drawEnemyPath(enemyPath: MapPath): Phaser.Curves.Path {
+    const HALF_TILE = TILE_SIZE / 2;
 
-function placeUnit(
-  scene: Game,
-  x: number,
-  y: number,
-  type = 'NORMAL' as keyof typeof UnitType
-) {
-  const map = scene.map;
-  const row = Math.floor(y / TILE_SIZE);
-  const column = Math.floor(x / TILE_SIZE);
+    const path = this.add.path(
+      enemyPath[0].x * TILE_SIZE + HALF_TILE,
+      enemyPath[0].y * TILE_SIZE + HALF_TILE
+    );
 
-  if (map[row][column] === VALID_UNIT_POSITION) {
-    const UnitConstructor = UnitType[type];
-    const unit = new UnitConstructor(scene.entities.unitGroup.scene as Game);
-    scene.entities.unitGroup.add(unit);
-    scene.entities.unitGroup.scene.add.existing(unit);
-
-    if (unit) {
-      unit.setActive(true);
-      unit.setVisible(true);
-      unit.place(row, column);
-      unit.setInteractive({ useHandCursor: true });
+    for (let i = 1; i < enemyPath.length; i++) {
+      path.lineTo(
+        enemyPath[i].x * TILE_SIZE + HALF_TILE,
+        enemyPath[i].y * TILE_SIZE + HALF_TILE
+      );
     }
+
+    return path;
   }
-}
 
-function damageEnemy(enemy: Enemy, bullet: Bullet) {
-  const ifEnemyAndBulletAlive = enemy.active && bullet.active;
+  placeUnit(x: number, y: number, type = 'NORMAL' as keyof typeof UnitType) {
+    const row = Math.floor(y / TILE_SIZE);
+    const column = Math.floor(x / TILE_SIZE);
 
-  if (ifEnemyAndBulletAlive) {
-    bullet.setActive(false);
-    bullet.setVisible(false);
+    if (this.map[row][column] === VALID_UNIT_POSITION) {
+      const UnitConstructor = UnitType[type];
+      const unit = new UnitConstructor(this);
+      this.entities.unitGroup.add(unit);
+      this.add.existing(unit);
 
-    enemy.receiveDamage(bullet.getDamage());
-  }
-}
-
-function disableBrowserRightClickMenu(scene: Phaser.Scene) {
-  scene.input.mouse.disableContextMenu();
-}
-
-function configureUnitPathfindingGrid(
-  unitPathfinder: EasyStar.js,
-  map: number[][]
-) {
-  unitPathfinder.setGrid(map);
-  unitPathfinder.setAcceptableTiles([
-    VALID_UNIT_POSITION,
-    OCCUPIED_UNIT_POSITION,
-    UNIT_CROSSING,
-  ]);
-}
-
-function configureEnemyPathfinding(
-  enemyPathfinder: EasyStar.js,
-  map: number[][],
-  scene: Game
-) {
-  enemyPathfinder.setGrid(map);
-  enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
-
-  const { enemyStartCoordinates, enemyEndCoordinates } =
-    getEnemyStartEndCoordinates(map);
-
-  enemyPathfinder.findPath(
-    enemyStartCoordinates.col,
-    enemyStartCoordinates.row,
-    enemyEndCoordinates.col,
-    enemyEndCoordinates.row,
-    (path) => {
-      if (path) {
-        scene.enemyPath = drawEnemyPath(scene, path);
-      } else {
-        sendUiAlert({ invalidCommand: `Path not found.` });
+      if (unit) {
+        unit.setActive(true);
+        unit.setVisible(true);
+        unit.place(row, column);
+        unit.setInteractive({ useHandCursor: true });
       }
     }
-  );
-
-  enemyPathfinder.calculate();
-}
-
-function configureHomeBase(scene: Game) {
-  const { enemyEndCoordinates } = getEnemyStartEndCoordinates(scene.map);
-
-  const { x, y } = getPositionForTileCoordinates({
-    row: enemyEndCoordinates.row,
-    col: enemyEndCoordinates.col
-  });
-
-  scene.entities.homeBase.setNewPosition(x, y);
-}
-
-function addSelectionRectangle(scene: Phaser.Scene) {
-  return scene.add.rectangle(
-    0,
-    0,
-    0,
-    0,
-    SELECTION_RECTANGLE_COLOR,
-    SELECTION_RECTANGLE_OPACITY
-  );
+  }
 }
 
 function getEnemyStartEndCoordinates(map: number[][]) {

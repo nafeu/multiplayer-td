@@ -3,15 +3,13 @@ import { Game } from '../scenes/Game';
 
 import HealthBar from './HealthBar';
 
-import { generateId, getPositionByTile } from '../utils';
+import { generateId } from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
   ENEMY_IMG_NAME,
   ENEMY_HP,
   ENEMY_SPEED,
-  TILE_SIZE,
-  UNIT_SNAP_DISTANCE,
 } from '../constants';
 
 class Enemy extends Phaser.Physics.Arcade.Image {
@@ -20,13 +18,12 @@ class Enemy extends Phaser.Physics.Arcade.Image {
   hp: number;
   healthBar: HealthBar;
   recycled: number;
-  enemyPath: Phaser.Curves.Path;
+  enemyPath!: Phaser.Curves.Path;
 
   constructor(scene: Game) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
 
     this.id = generateId('Enemy');
-    this.enemyPath = scene.enemyPath;
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;
@@ -61,11 +58,12 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     }
   }
 
-  startOnPath() {
-    // set the t parameter at the start of the path
+  startOnPath(path: Phaser.Curves.Path) {
+    this.enemyPath = path;
+
     this.follower.t = 0;
 
-    // get x and y of the given t point
+    // get x and y of the given t point (it is mutated directly within the passed Vector)
     this.enemyPath.getPoint(this.follower.t, this.follower.vec);
 
     // set the x and y of our enemy to the received from the previous step

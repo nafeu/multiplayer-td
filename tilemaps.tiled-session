@@ -22,15 +22,37 @@
             "scaleInDock": 1,
             "scaleInEditor": 1
         },
+        "public/assets/level-0.tmj": {
+            "scale": 0.939609375,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 326.19938471771843,
+                "y": 297.46403924503204
+            }
+        },
+        "public/assets/level-0.tmj#grass-biome": {
+            "scaleInDock": 1
+        },
         "public/assets/level-0.tmx": {
             "scale": 0.89359375,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 640.6714460570031,
-                "y": 274.733344990383
+                "x": 339.63979716733695,
+                "y": 311.66287812554646
             }
         },
         "public/assets/level-0.tmx#grass-biome": {
+            "scaleInDock": 1
+        },
+        "public/assets/level-1.tmj": {
+            "scale": 0.939609375,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 320.87802444499874,
+                "y": 279.37141431778497
+            }
+        },
+        "public/assets/level-1.tmj#grass-biome": {
             "scaleInDock": 1
         }
     },
@@ -47,6 +69,8 @@
     "property.type": "bool",
     "recentFiles": [
         "public/assets/level-0.tmx",
+        "public/assets/level-0.tmj",
+        "public/assets/level-1.tmj",
         "public/assets/grass-biome.tsx"
     ],
     "tileset.embedInMap": true,

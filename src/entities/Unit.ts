@@ -55,15 +55,12 @@ export class Unit extends Phaser.GameObjects.Image {
   tilePositionRow = -100;
   tilePositionCol = -100;
 
-  map: number[][];
-
   STATES = STATES; // { SEIGED: 'SEIGED', PREPARING: 'PREPARING', MOVING: 'MOVING' };
 
   constructor(scene: Game, _spriteKey = UNIT_IMG_NAME__NORMAL) {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, _spriteKey);
 
     this.id = generateId('Unit');
-    this.map = scene.map;
 
     logger.log('### NEW TANKY', this);
 
@@ -86,6 +83,10 @@ export class Unit extends Phaser.GameObjects.Image {
     );
   }
 
+  gameScene() {
+    return this.scene as Game;
+  }
+
   getDamage() {
     return BULLET_DAMAGE;
   }
@@ -103,7 +104,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   toString() {
-    const entities = (this.scene as Game).entities;
+    const entities = this.gameScene().entities;
     const selected = entities.selectedUnitGroup.hasUnit(this) ? '*' : '';
 
     let movingStatus = '';
@@ -139,7 +140,7 @@ export class Unit extends Phaser.GameObjects.Image {
     this.target.x = this.x;
     this.target.y = this.y;
 
-    this.map[this.tilePositionRow][this.tilePositionCol] =
+    this.gameScene().map[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
 
@@ -154,7 +155,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   shootBullet(enemy: Enemy) {
-    const entities = (this.scene as Game).entities;
+    const entities = this.gameScene().entities;
     const bullet = entities.bullets.get() as Bullet | null;
 
     if (bullet) {
@@ -265,7 +266,8 @@ export class Unit extends Phaser.GameObjects.Image {
     const { x: tilePositionCol, y: tilePositionRow } = finalPosition;
 
     // mark current tile as vacant
-    this.map[this.tilePositionRow][this.tilePositionCol] = VALID_UNIT_POSITION;
+    this.gameScene().map[this.tilePositionRow][this.tilePositionCol] =
+      VALID_UNIT_POSITION;
 
     this.tilePositionRow = tilePositionRow;
     this.tilePositionCol = tilePositionCol;
@@ -282,7 +284,7 @@ export class Unit extends Phaser.GameObjects.Image {
     this._queuedPath = [];
 
     // mark final tile as occupied
-    this.map[this.tilePositionRow][this.tilePositionCol] =
+    this.gameScene().map[this.tilePositionRow][this.tilePositionCol] =
       OCCUPIED_UNIT_POSITION;
   }
 
@@ -303,7 +305,7 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   update(time: number, delta: number) {
-    const entities = (this.scene as Game).entities;
+    const entities = this.gameScene().entities;
 
     if (this.isMoving()) {
       this.setTint(UNIT_MOVING_TINT);
@@ -340,11 +342,10 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
-    const entities = (this.scene as Game).entities;
-    const keysDuringPointerEvent =
-      pointer.event as unknown as Phaser.Input.Keyboard.Key;
+    const game = this.gameScene();
+    const entities = game.entities;
 
-    if (keysDuringPointerEvent.shiftKey) {
+    if (game.keyIsDown(game.KEYS.SHIFT)) {
       entities.selectedUnitGroup.toggleUnit(this);
     } else {
       entities.selectedUnitGroup.clearUnits();
@@ -353,7 +354,7 @@ export class Unit extends Phaser.GameObjects.Image {
   };
 
   getEnemy(x: number, y: number, distance: number) {
-    const entities = (this.scene as Game).entities;
+    const entities = this.gameScene().entities;
     // TODO: should also allow biasing for enemies closer to HomeBase
     const enemyUnits = entities.enemyGroup.getChildren() as Array<Enemy>;
 

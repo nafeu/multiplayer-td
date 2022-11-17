@@ -22,18 +22,15 @@ class Pointer extends Phaser.GameObjects.GameObject {
 
   x: number;
   y: number;
-  map: number[][];
 
   debugTileHighlighterToggleKey: Phaser.Input.Keyboard.Key;
 
   constructor(scene: Game) {
     super(scene, 'Pointer');
 
-    this.map = scene.map;
-
     this.debugTileHighlighterToggleKey =
       this.scene.input.keyboard.addKey('CTRL');
-    this.indicator = scene.add.graphics();
+    this.indicator = scene.add.graphics().setDepth(1000);
     this.indicatorDebugText = scene.add
       .text(BOARD_WIDTH, BOARD_HEIGHT, '')
       .setDepth(1000)
@@ -49,16 +46,18 @@ class Pointer extends Phaser.GameObjects.GameObject {
     );
   }
 
+  gameScene() {
+    return this.scene as Game;
+  }
+
   isDebugKeyDown() {
-    return this.scene.input.keyboard.checkDown(
-      this.debugTileHighlighterToggleKey
-    );
+    return this.gameScene().keyIsDown(this.debugTileHighlighterToggleKey);
   }
 
   update() {
     this.indicator.clear();
     this.indicatorDebugText.setText('');
-    const entities = (this.scene as Game).entities;
+    const entities = this.gameScene().entities;
 
     const selectedUnitCount = entities.selectedUnitGroup.size();
     const hasSelectedUnits = selectedUnitCount > 0;
@@ -68,13 +67,16 @@ class Pointer extends Phaser.GameObjects.GameObject {
         this.x,
         this.y,
         entities.selectedUnitGroup.getUnits(),
-        this.map,
+        this.gameScene().map,
         entities.interaction
       );
 
       const hasSpaceForUnits = validUnitFormation.length >= selectedUnitCount;
 
-      if (hasSpaceForUnits && isTileFreeAtPosition(this.x, this.y, this.map)) {
+      if (
+        hasSpaceForUnits &&
+        isTileFreeAtPosition(this.x, this.y, this.gameScene().map)
+      ) {
         this.indicator.fillStyle(
           INDICATOR_VALID_SELECTION_COLOR,
           INDICATOR_OPACITY

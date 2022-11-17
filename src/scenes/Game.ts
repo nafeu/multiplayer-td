@@ -64,10 +64,12 @@ export class Game extends Phaser.Scene {
   enemyPath!: Phaser.Curves.Path;
   entities!: EntityManager;
   finder!: EasyStar.js;
+  kills = 0;
   map!: number[][];
   nextEnemy!: number;
   playerHUD!: Phaser.GameObjects.Text;
   pointer!: Phaser.GameObjects.GameObject;
+  scoreboard!: Phaser.GameObjects.Text;
   selection!: Phaser.GameObjects.Rectangle;
   tilemap!: Phaser.Tilemaps.Tilemap;
   tileset!: Phaser.Tilemaps.Tileset;
@@ -231,7 +233,7 @@ export class Game extends Phaser.Scene {
         // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
         // and doesn't technically guarantee ordering of the objects being compared
         // so this wrapper is taking responsibility of this assumption
-        return damageEnemy(enemy as Enemy, bullet as Bullet);
+        return this.damageEnemy(enemy as Enemy, bullet as Bullet);
       }
     );
 
@@ -249,6 +251,7 @@ export class Game extends Phaser.Scene {
     );
 
     // GAMEPLAY OVERLAYS
+    this.scoreboard = this.add.text(5, 5, `Score: 0`).setDepth(1); //.setOrigin(0, 0);
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
         align: 'right',
@@ -303,6 +306,7 @@ export class Game extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
+    this.scoreboard.setText(`Score: ${this.kills}`);
     this.playerHUD.setText([
       `Level: ${this.currentLevel + 1}`,
       // `Units Available: ${
@@ -312,7 +316,7 @@ export class Game extends Phaser.Scene {
       `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
-      // `${this.entities.homeBase.toString()}`,
+      `${this.entities.homeBase.toString()}`,
     ]);
 
     const shouldSpawnEnemy =
@@ -343,10 +347,26 @@ export class Game extends Phaser.Scene {
       } else {
         sendUiAlert({ message: 'NEXT LEVEL' });
         // so any enroute enemies are cleaned up before next level starts
-        this.entities.enemyGroup.clear();
+        this.entities.enemyGroup.setActive(false);
+        this.entities.enemyGroup.setVisible(false);
+
         this.currentLevel += 1;
         // #restart triggers starts with the preload method on this scene
         this.scene.restart();
+      }
+    }
+  }
+
+  damageEnemy(enemy: Enemy, bullet: Bullet) {
+    const ifEnemyAndBulletAlive = enemy.active && bullet.active;
+
+    if (ifEnemyAndBulletAlive) {
+      bullet.setActive(false);
+      bullet.setVisible(false);
+
+      enemy.receiveDamage(bullet.getDamage());
+      if (!enemy.active) {
+        this.kills += 1;
       }
     }
   }
@@ -525,17 +545,6 @@ function placeUnit(
       unit.place(row, column);
       unit.setInteractive({ useHandCursor: true });
     }
-  }
-}
-
-function damageEnemy(enemy: Enemy, bullet: Bullet) {
-  const ifEnemyAndBulletAlive = enemy.active && bullet.active;
-
-  if (ifEnemyAndBulletAlive) {
-    bullet.setActive(false);
-    bullet.setVisible(false);
-
-    enemy.receiveDamage(bullet.getDamage());
   }
 }
 

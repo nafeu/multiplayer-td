@@ -173,15 +173,39 @@ export class Game extends Phaser.Scene {
     );
 
     // value used to control spawn rate of enemies
-    this.nextEnemy = 0;
+    // initialize with delay to let some level intro viz to run
+    // Note: on scene restarts, the clock does not reset
+    this.nextEnemy = this.time.now + 4_000;
 
     configureUnitPathfindingGrid(this.unitPathfinder, this.map);
     configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
     configureHomeBase(this);
+
+    // Level Change Notification
+    const verticalPosition = (BOARD_HEIGHT * 2) / 5;
+    const initialY = BOARD_HEIGHT / 2;
+
+    const text = this.add
+      .text(BOARD_WIDTH / 2, initialY, `Level ${this.currentLevel + 1}`, {
+        align: 'center',
+        fontSize: '32px',
+      })
+      .setAlpha(0)
+      .setOrigin(0.5, 0.5);
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 1, duration: 2000, ease: 'Power1' },
+      y: { value: verticalPosition, duration: 3000, ease: 'Power1' },
+    });
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 0, delay: 2000, duration: 1000, ease: 'Power1' },
+    });
   }
 
   create() {
-    logger.log('### CREATE ###');
     this.loadAdditionalTextures();
 
     this.unitPathfinder = new EasyStar.js();
@@ -309,6 +333,7 @@ export class Game extends Phaser.Scene {
     this.scoreboard.setText(`Score: ${this.kills}`);
     this.playerHUD.setText([
       `Level: ${this.currentLevel + 1}`,
+      // `Next Enemy: ${(this.nextEnemy - time).toFixed()}`,
       // `Units Available: ${
       //   UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
       // }/${UNIT_SQUAD_SIZE}`,

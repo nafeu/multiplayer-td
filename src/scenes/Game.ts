@@ -44,10 +44,13 @@ import { TileProperties } from '../entities/Map';
 
 class LevelConfig {
   tilemapKey: string;
+  totalEnemies: number;
   MAP_LAYER_KEY = 'Below Player';
 
   constructor(tilemapKey: string) {
     this.tilemapKey = tilemapKey;
+
+    this.totalEnemies = 4;
   }
 }
 
@@ -62,6 +65,7 @@ export class Game extends Phaser.Scene {
    * letting you do cool stuff. So this should be okay...
    * */
   enemyPath!: Phaser.Curves.Path;
+  enemiesSpawned = 0;
   entities!: EntityManager;
   finder!: EasyStar.js;
   kills = 0;
@@ -148,9 +152,9 @@ export class Game extends Phaser.Scene {
 
     this.tilemap = this.make.tilemap({ key: config.tilemapKey });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');
-    this.tilemap.createLayer('Below Player', this.tileset);
+    this.tilemap.createLayer(config.MAP_LAYER_KEY, this.tileset);
 
-    const belowPlayerLayer = this.tilemap.getLayer('Below Player');
+    const belowPlayerLayer = this.tilemap.getLayer(config.MAP_LAYER_KEY);
 
     this.map = belowPlayerLayer.data.map((row) =>
       row.map<number>((col: Phaser.Tilemaps.Tile) => {
@@ -176,6 +180,7 @@ export class Game extends Phaser.Scene {
     // initialize with delay to let some level intro viz to run
     // Note: on scene restarts, the clock does not reset
     this.nextEnemy = this.time.now + 4_000;
+    this.enemiesSpawned = 0;
 
     configureUnitPathfindingGrid(this.unitPathfinder, this.map);
     configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
@@ -206,6 +211,7 @@ export class Game extends Phaser.Scene {
   }
 
   create() {
+    logger.log('### CREATE ###');
     this.loadAdditionalTextures();
 
     this.unitPathfinder = new EasyStar.js();
@@ -334,10 +340,10 @@ export class Game extends Phaser.Scene {
     this.playerHUD.setText([
       `Level: ${this.currentLevel + 1}`,
       // `Next Enemy: ${(this.nextEnemy - time).toFixed()}`,
-      // `Units Available: ${
-      //   UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
-      // }/${UNIT_SQUAD_SIZE}`,
-      `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
+      `Units Available: ${
+        UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
+      }/${UNIT_SQUAD_SIZE}`,
+      // `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
       `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
@@ -345,7 +351,9 @@ export class Game extends Phaser.Scene {
     ]);
 
     const shouldSpawnEnemy =
-      time > this.nextEnemy && this.enemyPath !== undefined;
+      time > this.nextEnemy &&
+      this.enemyPath !== undefined &&
+      this.enemiesSpawned < this.currentConfiguration().totalEnemies;
 
     if (shouldSpawnEnemy) {
       const enemy = this.entities.enemyGroup.get() as Enemy | null;
@@ -356,29 +364,40 @@ export class Game extends Phaser.Scene {
         enemy.startOnPath(this.enemyPath);
 
         this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
+        this.enemiesSpawned += 1;
       }
     }
 
     this.entities.pointer.update();
     this.entities.homeBase.update(time, delta);
 
-    if (this.entities.homeBase.hp === 0) {
-      logger.log('### TRIGGERING DEATH LOGIC ###');
+    if (
+      this.enemiesSpawned >= this.currentConfiguration().totalEnemies &&
+      !this.entities.enemyGroup.getFirstAlive()
+    ) {
+      sendUiAlert({ message: 'NEXT LEVEL' });
+      // so any enroute enemies are cleaned up before next level starts
+      this.entities.enemyGroup.setActive(false);
+      this.entities.enemyGroup.setVisible(false);
+
       if (this.currentLevel >= this.levelConfigurations.length - 1) {
-        sendUiAlert({ message: 'GAME OVER' });
+        sendUiAlert({ message: 'YOU WON' });
         this.currentLevel = 0;
         this.scene.pause();
         this.scene.start(GameOverScene);
       } else {
-        sendUiAlert({ message: 'NEXT LEVEL' });
-        // so any enroute enemies are cleaned up before next level starts
-        this.entities.enemyGroup.setActive(false);
-        this.entities.enemyGroup.setVisible(false);
-
         this.currentLevel += 1;
         // #restart triggers starts with the preload method on this scene
         this.scene.restart();
       }
+    }
+
+    if (this.entities.homeBase.hp === 0) {
+      logger.log('### TRIGGERING DEATH LOGIC ###');
+      sendUiAlert({ message: 'GAME OVER' });
+      this.currentLevel = 0;
+      this.scene.pause();
+      this.scene.start(GameOverScene);
     }
   }
 

@@ -35,11 +35,20 @@ class HomeBase extends Phaser.GameObjects.Image {
     this._previousDamageTintReset = null;
   }
 
+  setDepth(depth: number) {
+    super.setDepth(depth);
+    this.healthBar.bar.setDepth(depth);
+
+    return this;
+  }
+
   setNewPosition(x: number, y: number) {
     this.x = x;
     this.y = y;
 
-    this.healthBar.setPosition(x, y);
+    this.healthBar.setPosition(this.x - TILE_SIZE / 2, this.y - TILE_SIZE);
+
+    return this;
   }
 
   toString() {

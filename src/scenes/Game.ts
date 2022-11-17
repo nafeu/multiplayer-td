@@ -34,13 +34,24 @@ import {
   UNIT_CROSSING,
   HOMEBASE_TEXTURE_NAME,
   UNIT_SQUAD_SIZE,
-  VALID_UNIT_POSITION
+  VALID_UNIT_POSITION,
 } from '../constants';
 
-import { getLoggingConfig } from '../logger';
+import { getLogger, getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
 import { TileProperties } from '../entities/Map';
+
+class LevelConfig {
+  tilemapKey: string;
+  MAP_LAYER_KEY = 'Below Player';
+
+  constructor(tilemapKey: string) {
+    this.tilemapKey = tilemapKey;
+  }
+}
+
+const logger = getLogger('GAME_SCENE');
 
 export const title = 'game';
 export class Game extends Phaser.Scene {
@@ -63,11 +74,22 @@ export class Game extends Phaser.Scene {
   unitPathfinder!: EasyStar.js;
   enemyPathfinder!: EasyStar.js;
 
+  currentLevel: number;
+  levelConfigurations: LevelConfig[];
+
   constructor() {
+    logger.log('### INIT ###');
     super(title);
+
+    this.currentLevel = 0;
+    this.levelConfigurations = [
+      new LevelConfig('level-0'),
+      new LevelConfig('level-1'),
+    ];
   }
 
   preload() {
+    logger.log('### PRELOAD ###');
     // Why so convoluted?
     // - Vite (our bundler) uses BASE_URL, but bun does not
     // - bun prefers to use public/ dir for assets https://github.com/oven-sh/bun#using-bun-with-single-page-apps
@@ -93,10 +115,73 @@ export class Game extends Phaser.Scene {
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // load the JSON file
-    this.load.tilemapTiledJSON('level-0', 'assets/level-0.tmj');
+    this.levelConfigurations.forEach((config) => {
+      this.load.tilemapTiledJSON(
+        config.tilemapKey,
+        `assets/${config.tilemapKey}.tmj`
+      );
+    });
+  }
+
+  /**
+   * Used for loading additional textures that are dependent on `#preload` completion
+   */
+  loadAdditionalTextures() {
+    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
+      sliceFromTexture(
+        this,
+        HOMEBASE_TEXTURE_NAME,
+        'grass-biome',
+        32 * 3,
+        32 * 16
+      );
+  }
+
+  currentConfiguration() {
+    return this.levelConfigurations[this.currentLevel];
+  }
+
+  loadCurrentLevel() {
+    const config = this.currentConfiguration();
+
+    this.tilemap = this.make.tilemap({ key: config.tilemapKey });
+    this.tileset = this.tilemap.addTilesetImage('grass-biome');
+    this.tilemap.createLayer('Below Player', this.tileset);
+
+    const belowPlayerLayer = this.tilemap.getLayer('Below Player');
+
+    this.map = belowPlayerLayer.data.map((row) =>
+      row.map<number>((col: Phaser.Tilemaps.Tile) => {
+        const properties = col.properties as TileProperties;
+
+        if (properties.collision) {
+          return INVALID_UNIT_POSITION;
+        }
+
+        if (properties.enemyPath) {
+          return ENEMY_PATH;
+        }
+
+        if (properties.crossing) {
+          return UNIT_CROSSING;
+        }
+
+        return VALID_UNIT_POSITION;
+      })
+    );
+
+    // value used to control spawn rate of enemies
+    this.nextEnemy = 0;
+
+    configureUnitPathfindingGrid(this.unitPathfinder, this.map);
+    configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
+    configureHomeBase(this);
   }
 
   create() {
+    logger.log('### CREATE ###');
+    this.loadAdditionalTextures();
+
     this.unitPathfinder = new EasyStar.js();
     this.enemyPathfinder = new EasyStar.js();
 
@@ -128,48 +213,7 @@ export class Game extends Phaser.Scene {
       this
     );
 
-    this.tilemap = this.make.tilemap({ key: 'level-0' });
-    this.tileset = this.tilemap.addTilesetImage('grass-biome');
-    this.tilemap.createLayer('Below Player', this.tileset);
-
-    const belowPlayerLayer = this.tilemap.getLayer('Below Player');
-
-    const belowPlayerGrid = belowPlayerLayer.data.map((row) =>
-      row.map((col: Phaser.Tilemaps.Tile) => {
-        const properties = col.properties as TileProperties;
-
-        if (properties.collision) {
-          return INVALID_UNIT_POSITION;
-        }
-
-        if (properties.enemyPath) {
-          return ENEMY_PATH;
-        }
-
-        if (properties.crossing) {
-          return UNIT_CROSSING;
-        }
-
-        return VALID_UNIT_POSITION;
-      })
-    );
-
-    this.map = belowPlayerGrid;
-
-    this.textures.get(HOMEBASE_TEXTURE_NAME).key === '__MISSING' &&
-      sliceFromTexture(
-        this,
-        HOMEBASE_TEXTURE_NAME,
-        'grass-biome',
-        32 * 3,
-        32 * 16
-      );
-
-
     this.selection = addSelectionRectangle(this);
-
-    // value used to control spawn rate of enemies
-    this.nextEnemy = 0;
 
     this.entities = entityManagerFactory(this);
 
@@ -178,22 +222,17 @@ export class Game extends Phaser.Scene {
     this.add.existing(this.entities.homeBase);
     this.physics.add.existing(this.entities.homeBase);
 
-    configureUnitPathfindingGrid(this.unitPathfinder, this.map);
-    configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
-    configureHomeBase(this);
-
-    // this is a type helper
-    // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
-    // and doesn't technically guarantee ordering of the objects being compared
-    // so this wrapper is taking responsibility of this assumption
-    function wrappedDamageEnemy(enemy: any, bullet: any) {
-      return damageEnemy(enemy as Enemy, bullet as Bullet);
-    }
-
+    // COLLISION PHYSICS
     this.physics.add.overlap(
       this.entities.enemyGroup,
       this.entities.bullets,
-      wrappedDamageEnemy
+      (enemy: any, bullet: any) => {
+        // this is a type helper
+        // because the underlying type is a generic Physics.Arcade.GameObjectWithBody
+        // and doesn't technically guarantee ordering of the objects being compared
+        // so this wrapper is taking responsibility of this assumption
+        return damageEnemy(enemy as Enemy, bullet as Bullet);
+      }
     );
 
     this.physics.add.overlap(
@@ -209,11 +248,15 @@ export class Game extends Phaser.Scene {
       }
     );
 
+    // GAMEPLAY OVERLAYS
     this.playerHUD = this.add
       .text(BOARD_WIDTH - 5, 5, `Tanks Available: n/a`, {
         align: 'right',
       })
+      .setDepth(1)
       .setOrigin(1, 0);
+
+    this.loadCurrentLevel();
 
     Object.keys(UnitType).forEach((unitType, idx) => {
       placeUnit(
@@ -261,9 +304,10 @@ export class Game extends Phaser.Scene {
 
   update(time: number, delta: number) {
     this.playerHUD.setText([
-      `Units Available: ${
-        UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
-      }/${UNIT_SQUAD_SIZE}`,
+      `Level: ${this.currentLevel + 1}`,
+      // `Units Available: ${
+      //   UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
+      // }/${UNIT_SQUAD_SIZE}`,
       `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
       `Formation: ${this.entities.interaction.formationShape}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
@@ -280,7 +324,7 @@ export class Game extends Phaser.Scene {
       if (enemy) {
         enemy.setActive(true);
         enemy.setVisible(true);
-        enemy.startOnPath();
+        enemy.startOnPath(this.enemyPath);
 
         this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
       }
@@ -290,9 +334,20 @@ export class Game extends Phaser.Scene {
     this.entities.homeBase.update(time, delta);
 
     if (this.entities.homeBase.hp === 0) {
-      sendUiAlert({ message: 'GAME OVER' });
-      this.scene.pause();
-      this.scene.start(GameOverScene);
+      logger.log('### TRIGGERING DEATH LOGIC ###');
+      if (this.currentLevel >= this.levelConfigurations.length - 1) {
+        sendUiAlert({ message: 'GAME OVER' });
+        this.currentLevel = 0;
+        this.scene.pause();
+        this.scene.start(GameOverScene);
+      } else {
+        sendUiAlert({ message: 'NEXT LEVEL' });
+        // so any enroute enemies are cleaned up before next level starts
+        this.entities.enemyGroup.clear();
+        this.currentLevel += 1;
+        // #restart triggers starts with the preload method on this scene
+        this.scene.restart();
+      }
     }
   }
 
@@ -429,6 +484,7 @@ export class Game extends Phaser.Scene {
     }
   };
 }
+
 function drawEnemyPath(scene: Game, enemyPath: MapPath): Phaser.Curves.Path {
   const HALF_TILE = TILE_SIZE / 2;
 
@@ -532,10 +588,10 @@ function configureHomeBase(scene: Game) {
 
   const { x, y } = getPositionForTileCoordinates({
     row: enemyEndCoordinates.row,
-    col: enemyEndCoordinates.col
+    col: enemyEndCoordinates.col,
   });
 
-  scene.entities.homeBase.setNewPosition(x, y);
+  scene.entities.homeBase.setNewPosition(x, y).setDepth(1);
 }
 
 function addSelectionRectangle(scene: Phaser.Scene) {

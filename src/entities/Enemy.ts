@@ -3,15 +3,13 @@ import { Game } from '../scenes/Game';
 
 import HealthBar from './HealthBar';
 
-import { generateId, getPositionByTile } from '../utils';
+import { generateId } from '../utils';
 
 import {
   SPRITE_ATLAS_NAME,
   ENEMY_IMG_NAME,
   ENEMY_HP,
   ENEMY_SPEED,
-  TILE_SIZE,
-  UNIT_SNAP_DISTANCE,
 } from '../constants';
 
 class Enemy extends Phaser.Physics.Arcade.Image {
@@ -26,7 +24,6 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
 
     this.id = generateId('Enemy');
-    // this.enemyPath = scene.enemyPath;
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
     this.hp = ENEMY_HP;

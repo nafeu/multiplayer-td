@@ -182,9 +182,9 @@ export class Game extends Phaser.Scene {
     this.nextEnemy = this.time.now + 4_000;
     this.enemiesSpawned = 0;
 
-    configureUnitPathfindingGrid(this.unitPathfinder, this.map);
-    configureEnemyPathfinding(this.enemyPathfinder, this.map, this);
-    configureHomeBase(this);
+    this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
+    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
+    this.configureHomeBase();
 
     // Level Change Notification
     const verticalPosition = (BOARD_HEIGHT * 2) / 5;
@@ -217,7 +217,7 @@ export class Game extends Phaser.Scene {
     this.unitPathfinder = new EasyStar.js();
     this.enemyPathfinder = new EasyStar.js();
 
-    disableBrowserRightClickMenu(this);
+    this.disableBrowserRightClickMenu(this);
 
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
@@ -245,7 +245,7 @@ export class Game extends Phaser.Scene {
       this
     );
 
-    this.selection = addSelectionRectangle(this);
+    this.selection = this.addSelectionRectangle();
 
     this.entities = entityManagerFactory(this);
 
@@ -292,8 +292,7 @@ export class Game extends Phaser.Scene {
     this.loadCurrentLevel();
 
     Object.keys(UnitType).forEach((unitType, idx) => {
-      placeUnit(
-        this,
+      this.placeUnit(
         70 + idx * TILE_SIZE,
         250,
         unitType as keyof typeof UnitType
@@ -352,7 +351,6 @@ export class Game extends Phaser.Scene {
 
     const shouldSpawnEnemy =
       time > this.nextEnemy &&
-      this.enemyPath !== undefined &&
       this.enemiesSpawned < this.currentConfiguration().totalEnemies;
 
     if (shouldSpawnEnemy) {
@@ -547,115 +545,104 @@ export class Game extends Phaser.Scene {
       rotateFormationShape(this.entities.interaction);
     }
   };
-}
 
-function drawEnemyPath(scene: Game, enemyPath: MapPath): Phaser.Curves.Path {
-  const HALF_TILE = TILE_SIZE / 2;
+  disableBrowserRightClickMenu() {
+    this.input.mouse.disableContextMenu();
+  }
 
-  const path = scene.add.path(
-    enemyPath[0].x * TILE_SIZE + HALF_TILE,
-    enemyPath[0].y * TILE_SIZE + HALF_TILE
-  );
+  configureUnitPathfindingGrid(unitPathfinder: EasyStar.js, map: number[][]) {
+    unitPathfinder.setGrid(map);
+    unitPathfinder.setAcceptableTiles([
+      VALID_UNIT_POSITION,
+      OCCUPIED_UNIT_POSITION,
+      UNIT_CROSSING,
+    ]);
+  }
 
-  for (let i = 1; i < enemyPath.length; i++) {
-    path.lineTo(
-      enemyPath[i].x * TILE_SIZE + HALF_TILE,
-      enemyPath[i].y * TILE_SIZE + HALF_TILE
+  configureEnemyPathfinding(enemyPathfinder: EasyStar.js, map: number[][]) {
+    enemyPathfinder.setGrid(map);
+    enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
+
+    const { enemyStartCoordinates, enemyEndCoordinates } =
+      getEnemyStartEndCoordinates(map);
+
+    enemyPathfinder.enableSync();
+    enemyPathfinder.findPath(
+      enemyStartCoordinates.col,
+      enemyStartCoordinates.row,
+      enemyEndCoordinates.col,
+      enemyEndCoordinates.row,
+      (path) => {
+        if (path) {
+          this.enemyPath = this.drawEnemyPath(path);
+        } else {
+          sendUiAlert({ invalidCommand: `Path not found.` });
+        }
+      }
+    );
+    enemyPathfinder.calculate();
+
+    enemyPathfinder.disableSync();
+  }
+
+  configureHomeBase() {
+    const { enemyEndCoordinates } = getEnemyStartEndCoordinates(this.map);
+
+    const { x, y } = getPositionForTileCoordinates({
+      row: enemyEndCoordinates.row,
+      col: enemyEndCoordinates.col,
+    });
+
+    this.entities.homeBase.setNewPosition(x, y).setDepth(1);
+  }
+
+  addSelectionRectangle() {
+    return this.add.rectangle(
+      0,
+      0,
+      0,
+      0,
+      SELECTION_RECTANGLE_COLOR,
+      SELECTION_RECTANGLE_OPACITY
     );
   }
 
-  return path;
-}
+  drawEnemyPath(enemyPath: MapPath): Phaser.Curves.Path {
+    const HALF_TILE = TILE_SIZE / 2;
 
-function placeUnit(
-  scene: Game,
-  x: number,
-  y: number,
-  type = 'NORMAL' as keyof typeof UnitType
-) {
-  const map = scene.map;
-  const row = Math.floor(y / TILE_SIZE);
-  const column = Math.floor(x / TILE_SIZE);
+    const path = this.add.path(
+      enemyPath[0].x * TILE_SIZE + HALF_TILE,
+      enemyPath[0].y * TILE_SIZE + HALF_TILE
+    );
 
-  if (map[row][column] === VALID_UNIT_POSITION) {
-    const UnitConstructor = UnitType[type];
-    const unit = new UnitConstructor(scene.entities.unitGroup.scene as Game);
-    scene.entities.unitGroup.add(unit);
-    scene.entities.unitGroup.scene.add.existing(unit);
-
-    if (unit) {
-      unit.setActive(true);
-      unit.setVisible(true);
-      unit.place(row, column);
-      unit.setInteractive({ useHandCursor: true });
+    for (let i = 1; i < enemyPath.length; i++) {
+      path.lineTo(
+        enemyPath[i].x * TILE_SIZE + HALF_TILE,
+        enemyPath[i].y * TILE_SIZE + HALF_TILE
+      );
     }
+
+    return path;
   }
-}
 
-function disableBrowserRightClickMenu(scene: Phaser.Scene) {
-  scene.input.mouse.disableContextMenu();
-}
+  placeUnit(x: number, y: number, type = 'NORMAL' as keyof typeof UnitType) {
+    const row = Math.floor(y / TILE_SIZE);
+    const column = Math.floor(x / TILE_SIZE);
 
-function configureUnitPathfindingGrid(
-  unitPathfinder: EasyStar.js,
-  map: number[][]
-) {
-  unitPathfinder.setGrid(map);
-  unitPathfinder.setAcceptableTiles([
-    VALID_UNIT_POSITION,
-    OCCUPIED_UNIT_POSITION,
-    UNIT_CROSSING,
-  ]);
-}
+    if (this.map[row][column] === VALID_UNIT_POSITION) {
+      const UnitConstructor = UnitType[type];
+      const unit = new UnitConstructor(this);
+      this.entities.unitGroup.add(unit);
+      this.add.existing(unit);
 
-function configureEnemyPathfinding(
-  enemyPathfinder: EasyStar.js,
-  map: number[][],
-  scene: Game
-) {
-  enemyPathfinder.setGrid(map);
-  enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
-
-  const { enemyStartCoordinates, enemyEndCoordinates } =
-    getEnemyStartEndCoordinates(map);
-
-  enemyPathfinder.findPath(
-    enemyStartCoordinates.col,
-    enemyStartCoordinates.row,
-    enemyEndCoordinates.col,
-    enemyEndCoordinates.row,
-    (path) => {
-      if (path) {
-        scene.enemyPath = drawEnemyPath(scene, path);
-      } else {
-        sendUiAlert({ invalidCommand: `Path not found.` });
+      if (unit) {
+        unit.setActive(true);
+        unit.setVisible(true);
+        unit.place(row, column);
+        unit.setInteractive({ useHandCursor: true });
       }
     }
-  );
-
-  enemyPathfinder.calculate();
-}
-
-function configureHomeBase(scene: Game) {
-  const { enemyEndCoordinates } = getEnemyStartEndCoordinates(scene.map);
-
-  const { x, y } = getPositionForTileCoordinates({
-    row: enemyEndCoordinates.row,
-    col: enemyEndCoordinates.col,
-  });
-
-  scene.entities.homeBase.setNewPosition(x, y).setDepth(1);
-}
-
-function addSelectionRectangle(scene: Phaser.Scene) {
-  return scene.add.rectangle(
-    0,
-    0,
-    0,
-    0,
-    SELECTION_RECTANGLE_COLOR,
-    SELECTION_RECTANGLE_OPACITY
-  );
+  }
 }
 
 function getEnemyStartEndCoordinates(map: number[][]) {

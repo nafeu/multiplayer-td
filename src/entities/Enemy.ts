@@ -5,14 +5,9 @@ import HealthBar from './HealthBar';
 
 import { generateId } from '../utils';
 
-import {
-  SPRITE_ATLAS_NAME,
-  ENEMY_IMG_NAME,
-  ENEMY_HP,
-  ENEMY_SPEED,
-} from '../constants';
+import { ENEMY_HP, ENEMY_IMG_NAME, ENEMY_SPEED, TILE_SIZE } from '../constants';
 
-class Enemy extends Phaser.Physics.Arcade.Image {
+class Enemy extends Phaser.Physics.Arcade.Sprite {
   id: string;
   follower: { t: 0; vec: Phaser.Math.Vector2 };
   hp: number;
@@ -21,7 +16,9 @@ class Enemy extends Phaser.Physics.Arcade.Image {
   enemyPath!: Phaser.Curves.Path;
 
   constructor(scene: Game) {
-    super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
+    super(scene, 0, 0, ENEMY_IMG_NAME);
+
+    this.play({ key: `${ENEMY_IMG_NAME}-walk`, repeat: -1 });
 
     this.id = generateId('Enemy');
 
@@ -90,7 +87,10 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     if (this.follower.t >= 1) {
       this.handleDeadOrRemoved();
     } else {
-      this.healthBar.setPosition(this.follower.vec.x, this.follower.vec.y);
+      this.healthBar.setPosition(
+        this.follower.vec.x - TILE_SIZE / 2,
+        this.follower.vec.y - (TILE_SIZE * 3) / 4
+      );
       this.healthBar.setHealth(this.hp);
       this.healthBar.draw();
     }

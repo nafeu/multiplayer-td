@@ -12,20 +12,20 @@ export const UNIT_IMG_NAME__SPEEDY = 'speedy.png';
 export const UNIT_IMG_NAME__CHONKY = 'chonky.png';
 export const UNIT_IMG_NAME__SNIPEY = 'snipey.png';
 export const BULLET_IMG_NAME = '17.png';
-export const ENEMY_IMG_NAME = '05.png';
+export const ENEMY_IMG_NAME = 'drone1';
 export const HOMEBASE_TEXTURE_NAME = 'homebase';
 
 export const WAVE_STATES = {
   SPAWNING: 'SPAWNING',
-  WAITING: 'WAITING'
-}
+  WAITING: 'WAITING',
+};
 
 export const TILE_SIZE = SPRITE_SIZE;
 
 export const BULLET_DAMAGE = 50;
 export const ENEMY_HP = 500;
 export const ENEMY_SPAWN_RATE_MS = 300;
-export const ENEMY_SPEED = 1 / 20000;
+export const ENEMY_SPEED = 6 / 100_000;
 
 export const HOMEBASE_HP = 1000;
 export const HOMEBASE__SHAKE_DURATION = 200;

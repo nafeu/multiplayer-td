@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import EasyStar from 'easystarjs';
 
-import { Unit, UnitType } from '../entities/Unit';
+import { Unit, UnitType, UnitTypeOption } from '../entities/Unit';
 import Enemy from '../entities/Enemy';
 import Bullet from '../entities/Bullet';
 import Pointer from '../entities/Pointer';
@@ -41,6 +41,7 @@ import { getLogger, getLoggingConfig } from '../logger';
 import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
 import { TileProperties } from '../entities/Map';
+import { Button } from '../entities/Button';
 
 class LevelConfig {
   tilemapKey: string;
@@ -50,7 +51,7 @@ class LevelConfig {
   constructor(tilemapKey: string) {
     this.tilemapKey = tilemapKey;
 
-    this.totalEnemies = 4;
+    this.totalEnemies = 40000;
   }
 }
 
@@ -66,10 +67,12 @@ export class Game extends Phaser.Scene {
    * */
   enemyPath!: Phaser.Curves.Path;
   enemiesSpawned = 0;
+  enemyPathfinder!: EasyStar.js;
   entities!: EntityManager;
   finder!: EasyStar.js;
   kills = 0;
   map!: number[][];
+  moveMode = false;
   nextEnemy!: number;
   playerHUD!: Phaser.GameObjects.Text;
   pointer!: Phaser.GameObjects.GameObject;
@@ -77,8 +80,8 @@ export class Game extends Phaser.Scene {
   selection!: Phaser.GameObjects.Rectangle;
   tilemap!: Phaser.Tilemaps.Tilemap;
   tileset!: Phaser.Tilemaps.Tileset;
+  touchAssistBtn: Button | undefined;
   unitPathfinder!: EasyStar.js;
-  enemyPathfinder!: EasyStar.js;
 
   currentLevel: number;
   levelConfigurations: LevelConfig[];
@@ -217,7 +220,7 @@ export class Game extends Phaser.Scene {
     this.unitPathfinder = new EasyStar.js();
     this.enemyPathfinder = new EasyStar.js();
 
-    this.disableBrowserRightClickMenu(this);
+    this.disableBrowserRightClickMenu();
 
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
@@ -291,15 +294,26 @@ export class Game extends Phaser.Scene {
 
     this.loadCurrentLevel();
 
+    // for the mobile demos
+    if (this.sys.game.device.input.touch) this._loadTouchAssistBtn();
+
     Object.keys(UnitType).forEach((unitType, idx) => {
-      this.placeUnit(
-        70 + idx * TILE_SIZE,
-        250,
-        unitType as keyof typeof UnitType
-      );
+      this.placeUnit(70 + idx * TILE_SIZE, 250, unitType as UnitTypeOption);
     });
   }
 
+  KEYS = {
+    SHIFT: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+    CTRL: Phaser.Input.Keyboard.KeyCodes.CTRL,
+    SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
+  };
+
+  keyIsDown(key: Phaser.Input.Keyboard.Key | number) {
+    const keyboardKey = this.input.keyboard.addKey(key);
+    return this.input.keyboard.checkDown(keyboardKey);
+  }
+
+  // Leaving it as string, so it's easy to stringify
   KEYS_TO_WATCH = ['SHIFT', 'CTRL'];
 
   _getKeyboardCtrlStatusDebugLines() {
@@ -332,6 +346,28 @@ export class Game extends Phaser.Scene {
       ];
     }
     return [];
+  }
+
+  _loadTouchAssistBtn() {
+    this.touchAssistBtn = new Button(
+      this,
+      BOARD_WIDTH - 5,
+      BOARD_HEIGHT - 5,
+      this.moveMode ? 'MOVE' : 'SELECT',
+      () => {
+        this.moveMode = !this.moveMode;
+        this.touchAssistBtn?.setText(this.moveMode ? 'MOVE' : 'SELECT');
+      },
+      {
+        backgroundColor: 'black',
+        padding: {
+          x: 10,
+          y: 10,
+        },
+      }
+    )
+      .setDepth(20)
+      .setOrigin(1, 1);
   }
 
   update(time: number, delta: number) {
@@ -414,15 +450,14 @@ export class Game extends Phaser.Scene {
   }
 
   handlePointerDown = (pointer: Phaser.Input.Pointer) => {
-    const isHoldingCtrlKey = (
-      pointer.event as unknown as Phaser.Input.Keyboard.Key
-    ).ctrlKey;
-    if (isHoldingCtrlKey) {
+    this.touchAssistBtn?.enterButtonRestState();
+
+    if (this.keyIsDown(this.KEYS.CTRL)) {
       sendUiAlert({ info: 'All your tanks are already on the field!' });
       return;
     }
 
-    if (pointer.rightButtonDown()) {
+    if (pointer.rightButtonDown() || this.moveMode) {
       const validUnitFormation = getValidUnitFormation(
         pointer.x,
         pointer.y,
@@ -515,10 +550,7 @@ export class Game extends Phaser.Scene {
         return Phaser.Geom.Rectangle.Overlaps(selectionRect, rect);
       });
 
-      const shiftKeyIsNotPressed = !(
-        pointer.event as unknown as Phaser.Input.Keyboard.Key
-      ).shiftKey;
-      if (shiftKeyIsNotPressed) {
+      if (!this.keyIsDown(this.KEYS.SHIFT)) {
         this.entities.selectedUnitGroup.clearUnits();
       }
 
@@ -597,14 +629,16 @@ export class Game extends Phaser.Scene {
   }
 
   addSelectionRectangle() {
-    return this.add.rectangle(
-      0,
-      0,
-      0,
-      0,
-      SELECTION_RECTANGLE_COLOR,
-      SELECTION_RECTANGLE_OPACITY
-    );
+    return this.add
+      .rectangle(
+        0,
+        0,
+        0,
+        0,
+        SELECTION_RECTANGLE_COLOR,
+        SELECTION_RECTANGLE_OPACITY
+      )
+      .setDepth(1);
   }
 
   drawEnemyPath(enemyPath: MapPath): Phaser.Curves.Path {
@@ -625,7 +659,7 @@ export class Game extends Phaser.Scene {
     return path;
   }
 
-  placeUnit(x: number, y: number, type = 'NORMAL' as keyof typeof UnitType) {
+  placeUnit(x: number, y: number, type = 'NORMAL' as UnitTypeOption) {
     const row = Math.floor(y / TILE_SIZE);
     const column = Math.floor(x / TILE_SIZE);
 

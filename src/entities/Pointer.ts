@@ -41,7 +41,13 @@ class Pointer extends Phaser.GameObjects.GameObject {
 
     scene.input.on(
       Phaser.Input.Events.POINTER_MOVE as string,
-      this.handlePointerMove,
+      this.setPositionToPointerPosition,
+      this
+    );
+
+    scene.input.on(
+      Phaser.Input.Events.POINTER_DOWN as string,
+      this.setPositionToPointerPosition,
       this
     );
   }
@@ -113,7 +119,7 @@ class Pointer extends Phaser.GameObjects.GameObject {
     }
   }
 
-  handlePointerMove = (pointer: Phaser.Input.Pointer) => {
+  setPositionToPointerPosition = (pointer: Phaser.Input.Pointer) => {
     const { row, col } = getTileRowColBySceneXY(pointer.x, pointer.y);
 
     this.x = col * TILE_SIZE;

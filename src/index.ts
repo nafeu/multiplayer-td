@@ -15,11 +15,14 @@ import { PauseMenu } from './scenes/PauseMenu';
 import { GameOver } from './scenes/GameOver';
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
-  parent: 'content',
-  width: BOARD_WIDTH,
-  height: BOARD_HEIGHT,
   backgroundColor: BOARD_BACKGROUND_COLOR,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    parent: 'content',
+    autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
+    width: BOARD_WIDTH,
+    height: BOARD_HEIGHT,
+  },
   physics: {
     arcade: {
       debug: hasDebugFlag('show-physics-box'),
@@ -61,7 +64,9 @@ new Phaser.Game(config);
     (key) => (isAllEnabled = isAllEnabled && LOGGING_CONFIG[key])
   );
 
-  document.querySelector('#logging-controls')!.innerHTML = `<table>
+  document.querySelector(
+    '#logging-controls'
+  )!.innerHTML = `<table style="margin: auto">
         <tr>
           <th>Logging Key</th>
           <th><input id="enable-all" type="checkbox" title="enable/disable all" ${

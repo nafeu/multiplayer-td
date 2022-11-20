@@ -2,6 +2,7 @@ const LOGGING_CONFIG = {
   _ENABLE_ALL: false,
   DEBUG_HUD__KEYBOARD_STATUS: false,
   DEBUG_HUD__UNIT_STATUS: false,
+  DEBUG_HUD__HOME_BASE_HP: false,
   GAME_SCENE: false,
   GENERIC_DEBUG: false,
   UNIT_STATE_MACHINE: false,

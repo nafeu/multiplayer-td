@@ -15,5 +15,10 @@ type TileProperties = {
   crossing: boolean
 }
 
+type Wave = {
+  enemies: number[];
+  delay: number;
+}
+
 // should be "NonNegativeInteger" but that doesn't exist
 type MapPath = Array<{ x: number; y: number }>;

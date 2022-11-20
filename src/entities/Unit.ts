@@ -501,7 +501,7 @@ export const UnitType = {
   NORMAL: Unit,
   SPEEDY: SpeedyUnit,
   CHONKY: ChonkyUnit,
-  SNIPEY: SnipeyUnit,
+  SNIPEY: SnipeyUnit
 };
 
 export type UnitTypeOption = keyof typeof UnitType;

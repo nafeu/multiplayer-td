@@ -15,14 +15,19 @@ export const BULLET_IMG_NAME = '17.png';
 export const ENEMY_IMG_NAME = '05.png';
 export const HOMEBASE_TEXTURE_NAME = 'homebase';
 
+export const WAVE_STATES = {
+  SPAWNING: 'SPAWNING',
+  WAITING: 'WAITING'
+}
+
 export const TILE_SIZE = SPRITE_SIZE;
 
 export const BULLET_DAMAGE = 50;
-export const ENEMY_HP = 1500;
-export const ENEMY_SPAWN_RATE_MS = 1000;
-export const ENEMY_SPEED = 1 / 10000;
+export const ENEMY_HP = 500;
+export const ENEMY_SPAWN_RATE_MS = 300;
+export const ENEMY_SPEED = 1 / 20000;
 
-export const HOMEBASE_HP = 100_000;
+export const HOMEBASE_HP = 1000;
 export const HOMEBASE__SHAKE_DURATION = 200;
 export const HOMEBASE__SHAKE_INTENSITY = 0.0125 / 2;
 export const HOMEBASE_DAMAGED_TINT = 0xff0000;
@@ -30,13 +35,12 @@ export const HOMEBASE_DEAD_TINT = 0x0f0f0f;
 
 export const UNIT_FIRE_RANGE = 100;
 export const UNIT_FIRE_RATE_MS = 100;
-export const UNIT_SQUAD_SIZE = 5;
 export const UNIT_SNAP_DISTANCE = 2;
 export const UNIT_MOVING_TINT = 0xc0392b;
 export const UNIT_SELECTED_TILE_BORDER = 0x0000ff;
 export const UNIT_SELECTED_TINT = 0xf1c40f;
 export const UNIT_PREPARING_TINT = 0x808080;
-export const UNIT_PREPARING_ANIMATION_DELAY_MS = 2_000;
+export const UNIT_PREPARING_ANIMATION_DELAY_MS = 500;
 
 export const BOARD_WIDTH_TILE = BOARD_WIDTH / TILE_SIZE;
 export const BOARD_HEIGHT_TILE = BOARD_HEIGHT / TILE_SIZE;

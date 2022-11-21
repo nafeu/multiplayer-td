@@ -33,8 +33,8 @@ import {
   TILE_SIZE,
   UNIT_CROSSING,
   HOMEBASE_TEXTURE_NAME,
-  UNIT_SQUAD_SIZE,
   VALID_UNIT_POSITION,
+  WAVE_STATES
 } from '../constants';
 
 import { getLogger, getLoggingConfig } from '../logger';
@@ -46,12 +46,13 @@ import { Button } from '../entities/Button';
 class LevelConfig {
   tilemapKey: string;
   totalEnemies: number;
+  waves: Wave[];
   MAP_LAYER_KEY = 'Below Player';
 
-  constructor(tilemapKey: string) {
+  constructor(tilemapKey: string, waves: Wave[]) {
     this.tilemapKey = tilemapKey;
-
     this.totalEnemies = 40000;
+    this.waves = waves;
   }
 }
 
@@ -66,7 +67,6 @@ export class Game extends Phaser.Scene {
    * letting you do cool stuff. So this should be okay...
    * */
   enemyPath!: Phaser.Curves.Path;
-  enemiesSpawned = 0;
   enemyPathfinder!: EasyStar.js;
   entities!: EntityManager;
   finder!: EasyStar.js;
@@ -83,17 +83,57 @@ export class Game extends Phaser.Scene {
   touchAssistBtn: Button | undefined;
   unitPathfinder!: EasyStar.js;
 
-  currentLevel: number;
+  currentLevelIndex: number;
   levelConfigurations: LevelConfig[];
+
+  currentWaveIndex: number;
+  enemiesRemainingInWave: number;
+  enemySequenceIndex: number;
+  enemiesSpawned: number;
+  waveState: string;
 
   constructor() {
     logger.log('### INIT ###');
     super(title);
 
-    this.currentLevel = 0;
+    this.currentLevelIndex = 0;
+    this.currentWaveIndex = 0;
+    this.enemySequenceIndex = 0;
+
+    this.enemiesSpawned = 0;
+    this.enemiesRemainingInWave = 0;
+
+    this.waveState = WAVE_STATES.SPAWNING;
+
+    /*
+      TODO: Store level wave configurations in either
+            constants file or some separate folder
+    */
     this.levelConfigurations = [
-      new LevelConfig('level-0'),
-      new LevelConfig('level-1'),
+      new LevelConfig('level-0', [
+        {
+          enemies: [3, 3, 3],
+          delay: 3000
+        },
+        {
+          enemies: [15],
+          delay: 1000
+        },
+        {
+          enemies: [10, 10, 10],
+          delay: 3000
+        },
+      ]),
+      new LevelConfig('level-1', [
+        {
+          enemies: [5, 5, 5],
+          delay: 3000
+        },
+        {
+          enemies: [8, 8],
+          delay: 3000
+        }
+      ])
     ];
   }
 
@@ -146,18 +186,18 @@ export class Game extends Phaser.Scene {
       );
   }
 
-  currentConfiguration() {
-    return this.levelConfigurations[this.currentLevel];
+  getCurrentLevelConfiguration() {
+    return this.levelConfigurations[this.currentLevelIndex];
   }
 
   loadCurrentLevel() {
-    const config = this.currentConfiguration();
+    const currentLevelConfig = this.getCurrentLevelConfiguration();
 
-    this.tilemap = this.make.tilemap({ key: config.tilemapKey });
+    this.tilemap = this.make.tilemap({ key: currentLevelConfig.tilemapKey });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');
-    this.tilemap.createLayer(config.MAP_LAYER_KEY, this.tileset);
+    this.tilemap.createLayer(currentLevelConfig.MAP_LAYER_KEY, this.tileset);
 
-    const belowPlayerLayer = this.tilemap.getLayer(config.MAP_LAYER_KEY);
+    const belowPlayerLayer = this.tilemap.getLayer(currentLevelConfig.MAP_LAYER_KEY);
 
     this.map = belowPlayerLayer.data.map((row) =>
       row.map<number>((col: Phaser.Tilemaps.Tile) => {
@@ -179,11 +219,8 @@ export class Game extends Phaser.Scene {
       })
     );
 
-    // value used to control spawn rate of enemies
-    // initialize with delay to let some level intro viz to run
     // Note: on scene restarts, the clock does not reset
-    this.nextEnemy = this.time.now + 4_000;
-    this.enemiesSpawned = 0;
+    this.nextEnemy = this.time.now + currentLevelConfig.waves[this.currentWaveIndex].delay;
 
     this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
     this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
@@ -194,7 +231,7 @@ export class Game extends Phaser.Scene {
     const initialY = BOARD_HEIGHT / 2;
 
     const text = this.add
-      .text(BOARD_WIDTH / 2, initialY, `Level ${this.currentLevel + 1}`, {
+      .text(BOARD_WIDTH / 2, initialY, `Level ${this.currentLevelIndex + 1}: Wave 1`, {
         align: 'center',
         fontSize: '32px',
       })
@@ -297,9 +334,8 @@ export class Game extends Phaser.Scene {
     // for the mobile demos
     if (this.sys.game.device.input.touch) this._loadTouchAssistBtn();
 
-    Object.keys(UnitType).forEach((unitType, idx) => {
-      this.placeUnit(70 + idx * TILE_SIZE, 250, unitType as UnitTypeOption);
-    });
+    // TODO: Add & use 'unitStart' property via tilemap
+    this.placeUnit(70, 250, 'NORMAL' as UnitTypeOption)
   }
 
   KEYS = {
@@ -348,6 +384,18 @@ export class Game extends Phaser.Scene {
     return [];
   }
 
+  _getHomeBaseDebugLines() {
+    if (getLoggingConfig('DEBUG_HUD__HOME_BASE_HP')) {
+      return [
+        '',
+        'Home Base:',
+        '--------',
+        this.entities.homeBase.toString(),
+      ];
+    }
+    return [];
+  }
+
   _loadTouchAssistBtn() {
     this.touchAssistBtn = new Button(
       this,
@@ -373,63 +421,102 @@ export class Game extends Phaser.Scene {
   update(time: number, delta: number) {
     this.scoreboard.setText(`Score: ${this.kills}`);
     this.playerHUD.setText([
-      `Level: ${this.currentLevel + 1}`,
-      // `Next Enemy: ${(this.nextEnemy - time).toFixed()}`,
-      `Units Available: ${
-        UNIT_SQUAD_SIZE - this.entities.unitGroup.getTotalUsed()
-      }/${UNIT_SQUAD_SIZE}`,
-      // `Units Selected: ${this.entities.selectedUnitGroup.size()}`,
-      `Formation: ${this.entities.interaction.formationShape}`,
+      `Level: ${this.currentLevelIndex + 1}, Wave: ${this.currentWaveIndex}`,
       ...this._getKeyboardCtrlStatusDebugLines(),
       ...this._getUnitStatusDebugLines(),
-      `${this.entities.homeBase.toString()}`,
+      ...this._getHomeBaseDebugLines(),
     ]);
 
-    const shouldSpawnEnemy =
-      time > this.nextEnemy &&
-      this.enemiesSpawned < this.currentConfiguration().totalEnemies;
+    const currentLevelConfig = this.getCurrentLevelConfiguration();
+    const currentWave = currentLevelConfig.waves[this.currentWaveIndex];
 
-    if (shouldSpawnEnemy) {
-      const enemy = this.entities.enemyGroup.get() as Enemy | null;
+    if (this.waveState === WAVE_STATES.SPAWNING) {
+      const shouldSpawnEnemy = time > this.nextEnemy && this.enemiesRemainingInWave > 0;
 
-      if (enemy) {
-        enemy.setActive(true);
-        enemy.setVisible(true);
-        enemy.startOnPath(this.enemyPath);
+      if (shouldSpawnEnemy) {
+        const enemy = this.entities.enemyGroup.get() as Enemy | null;
 
-        this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
-        this.enemiesSpawned += 1;
+        if (enemy) {
+          enemy.setActive(true);
+          enemy.setVisible(true);
+          enemy.startOnPath(this.enemyPath);
+
+          this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
+          this.enemiesSpawned += 1;
+          this.enemiesRemainingInWave -= 1;
+        }
+      } else {
+        const noMoreEnemiesInWave = this.enemiesRemainingInWave <= 0;
+
+        if (noMoreEnemiesInWave) {
+          const noMoreEnemiesInWaveSequence = this.enemySequenceIndex >= currentWave.enemies.length;
+
+          if (noMoreEnemiesInWaveSequence) {
+            this.enemySequenceIndex = 0;
+            this.currentWaveIndex += 1;
+            this.waveState = WAVE_STATES.WAITING;
+          } else {
+            this.enemiesRemainingInWave = currentWave.enemies[this.enemySequenceIndex];
+            this.enemySequenceIndex += 1;
+            this.nextEnemy = time + currentWave.delay;
+          }
+        }
+      }
+    }
+
+    if (this.waveState === WAVE_STATES.WAITING) {
+      const allEnemiesFromWaveAreDead = this.entities.enemyGroup.getFirstAlive() === null;
+
+      if (allEnemiesFromWaveAreDead) {
+        const noMoreWavesRemaining = this.currentWaveIndex >= currentLevelConfig.waves.length;
+
+        if (noMoreWavesRemaining) {
+          const noMoreLevelsRemaining = this.currentLevelIndex >= this.levelConfigurations.length - 1;
+
+          if (noMoreLevelsRemaining) {
+            sendUiAlert({ message: 'YOU WON' });
+            this.currentLevelIndex = 0;
+            this.scene.pause();
+            this.scene.start(GameOverScene);
+          } else {
+            sendUiAlert({ message: 'NEXT LEVEL' });
+            this.entities.enemyGroup.setActive(false);
+            this.entities.enemyGroup.setVisible(false);
+
+            this.currentLevelIndex += 1;
+            this.currentWaveIndex = 0;
+            this.enemySequenceIndex = 0;
+
+            this.enemiesSpawned = 0;
+            this.enemiesRemainingInWave = 0;
+
+            this.scene.restart();
+          }
+
+        } else {
+          this.waveState = WAVE_STATES.SPAWNING;
+          this.placeUnit(70, 250, 'NORMAL' as UnitTypeOption)
+          this.nextEnemy = time + currentWave.delay;
+
+          this.triggerUIMessage(`Wave ${this.currentWaveIndex + 1}`)
+        }
       }
     }
 
     this.entities.pointer.update();
     this.entities.homeBase.update(time, delta);
 
-    if (
-      this.enemiesSpawned >= this.currentConfiguration().totalEnemies &&
-      !this.entities.enemyGroup.getFirstAlive()
-    ) {
-      sendUiAlert({ message: 'NEXT LEVEL' });
-      // so any enroute enemies are cleaned up before next level starts
-      this.entities.enemyGroup.setActive(false);
-      this.entities.enemyGroup.setVisible(false);
-
-      if (this.currentLevel >= this.levelConfigurations.length - 1) {
-        sendUiAlert({ message: 'YOU WON' });
-        this.currentLevel = 0;
-        this.scene.pause();
-        this.scene.start(GameOverScene);
-      } else {
-        this.currentLevel += 1;
-        // #restart triggers starts with the preload method on this scene
-        this.scene.restart();
-      }
-    }
-
     if (this.entities.homeBase.hp === 0) {
       logger.log('### TRIGGERING DEATH LOGIC ###');
       sendUiAlert({ message: 'GAME OVER' });
-      this.currentLevel = 0;
+
+      this.currentLevelIndex = 0;
+      this.currentWaveIndex = 0;
+      this.enemySequenceIndex = 0;
+
+      this.enemiesSpawned = 0;
+      this.enemiesRemainingInWave = 0;
+
       this.scene.pause();
       this.scene.start(GameOverScene);
     }
@@ -676,6 +763,30 @@ export class Game extends Phaser.Scene {
         unit.setInteractive({ useHandCursor: true });
       }
     }
+  }
+
+  triggerUIMessage(message: string) {
+    const verticalPosition = (BOARD_HEIGHT * 2) / 5;
+    const initialY = BOARD_HEIGHT / 2;
+
+    const text = this.add
+      .text(BOARD_WIDTH / 2, initialY, message, {
+        align: 'center',
+        fontSize: '32px',
+      })
+      .setAlpha(0)
+      .setOrigin(0.5, 0.5);
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 1, duration: 500, ease: 'Power1' },
+      y: { value: verticalPosition, duration: 1000, ease: 'Power1' },
+    });
+
+    this.tweens.add({
+      targets: text,
+      alpha: { value: 0, delay: 1000, duration: 500, ease: 'Power1' },
+    });
   }
 }
 

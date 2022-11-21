@@ -1,6 +1,4 @@
-import { Scene } from 'phaser';
-
-import { DEFAULT_FORMATION_SHAPE, UNIT_SQUAD_SIZE } from './constants';
+import { DEFAULT_FORMATION_SHAPE } from './constants';
 import Bullet from './entities/Bullet';
 import Enemy from './entities/Enemy';
 import HomeBase from './entities/HomeBase';
@@ -76,8 +74,7 @@ export const entityManagerFactory = (scene: Game) => {
     } as Phaser.Types.GameObjects.Group.GroupCreateConfig),
     unitGroup: scene.add.group({
       classType: Unit,
-      runChildUpdate: true,
-      maxSize: UNIT_SQUAD_SIZE,
+      runChildUpdate: true
       // use createCallback to pass the scene for post initialization stuff
       // createCallback: function (unit: Unit) {
       //   console.log('### Unit Created', unit.id, unit);

@@ -5,14 +5,9 @@ import HealthBar from './HealthBar';
 
 import { generateId } from '../utils';
 
-import {
-  SPRITE_ATLAS_NAME,
-  ENEMY_IMG_NAME,
-  ENEMY_HP,
-  ENEMY_SPEED,
-} from '../constants';
+import { ENEMY_HP, ENEMY_IMG_NAME, ENEMY_SPEED, TILE_SIZE } from '../constants';
 
-class Enemy extends Phaser.Physics.Arcade.Image {
+class Enemy extends Phaser.Physics.Arcade.Sprite {
   id: string;
   follower: { t: 0; vec: Phaser.Math.Vector2 };
   hp: number;
@@ -21,7 +16,9 @@ class Enemy extends Phaser.Physics.Arcade.Image {
   enemyPath!: Phaser.Curves.Path;
 
   constructor(scene: Game) {
-    super(scene, 0, 0, SPRITE_ATLAS_NAME, ENEMY_IMG_NAME);
+    super(scene, 0, 0, ENEMY_IMG_NAME);
+
+    this.play({ key: `${ENEMY_IMG_NAME}-walk`, repeat: -1 });
 
     this.id = generateId('Enemy');
 
@@ -77,6 +74,15 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     );
   }
 
+  updateOrientation(oldX: number, oldY: number, newX: number, newY: number) {
+    // default orientation is moving down
+    // Phaser uses a right-hand clockwise rotation system,
+    // where 0 is right, 90 is down, 180/-180 is left and -90 is up.
+    const offset = -Math.PI / 2;
+    const angle = Phaser.Math.Angle.Between(oldX, oldY, newX, newY);
+    this.setRotation(angle + offset);
+  }
+
   update(time: number, delta: number) {
     // move the t point along the path, 0 is the start and 0 is the end
     this.follower.t += ENEMY_SPEED * delta;
@@ -84,15 +90,20 @@ class Enemy extends Phaser.Physics.Arcade.Image {
     // get the new x and y coordinates in vec
     this.enemyPath.getPoint(this.follower.t, this.follower.vec);
 
+    const oldPosition = { x: this.x, y: this.y };
     // update enemy x and y to the newly obtained x and y
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
     // if we have reached the end of the path, remove the enemy
     if (this.follower.t >= 1) {
       this.handleDeadOrRemoved();
     } else {
-      this.healthBar.setPosition(this.follower.vec.x, this.follower.vec.y);
+      this.healthBar.setPosition(
+        this.follower.vec.x - TILE_SIZE / 2,
+        this.follower.vec.y - (TILE_SIZE * 3) / 4
+      );
       this.healthBar.setHealth(this.hp);
       this.healthBar.draw();
+      this.updateOrientation(oldPosition.x, oldPosition.y, this.x, this.y);
     }
   }
 }

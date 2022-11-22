@@ -74,6 +74,15 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     );
   }
 
+  updateOrientation(oldX: number, oldY: number, newX: number, newY: number) {
+    // default orientation is moving down
+    // Phaser uses a right-hand clockwise rotation system,
+    // where 0 is right, 90 is down, 180/-180 is left and -90 is up.
+    const offset = -Math.PI / 2;
+    const angle = Phaser.Math.Angle.Between(oldX, oldY, newX, newY);
+    this.setRotation(angle + offset);
+  }
+
   update(time: number, delta: number) {
     // move the t point along the path, 0 is the start and 0 is the end
     this.follower.t += ENEMY_SPEED * delta;
@@ -81,6 +90,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     // get the new x and y coordinates in vec
     this.enemyPath.getPoint(this.follower.t, this.follower.vec);
 
+    const oldPosition = { x: this.x, y: this.y };
     // update enemy x and y to the newly obtained x and y
     this.setPosition(this.follower.vec.x, this.follower.vec.y);
     // if we have reached the end of the path, remove the enemy
@@ -93,6 +103,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
       );
       this.healthBar.setHealth(this.hp);
       this.healthBar.draw();
+      this.updateOrientation(oldPosition.x, oldPosition.y, this.x, this.y);
     }
   }
 }

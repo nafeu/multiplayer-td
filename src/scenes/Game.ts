@@ -165,6 +165,12 @@ export class Game extends Phaser.Scene {
     // load the PNG file
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
+    // SFX
+    const SFX_SPRITE_SHEET = 'sfx';
+    this.load.audioSprite(SFX_SPRITE_SHEET, 'assets/sfx-sprites.json.text', [
+      'assets/sfx-sprites.mp3',
+    ]);
+
     // load the JSON file for each level configuration
     this.levelConfigurations.forEach((config) => {
       this.load.tilemapTiledJSON(
@@ -558,6 +564,9 @@ export class Game extends Phaser.Scene {
       enemy.receiveDamage(bullet.getDamage());
       if (!enemy.active) {
         this.kills += 1;
+
+        const SFX_ENEMY_DEATH = 'boss hit';
+        this.sound.playAudioSprite('sfx', SFX_ENEMY_DEATH);
       }
     }
   }

@@ -38,6 +38,8 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     this.dy = Math.sin(angle);
     this.lifespan = 1000;
     // TODO: lifespan should match range...for now just overshoot
+    const SFX_BULLET_NORMAL = 'shot';
+    this.scene.sound.playAudioSprite('sfx', SFX_BULLET_NORMAL);
   }
 
   update(time: number, delta: number) {

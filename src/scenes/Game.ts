@@ -168,7 +168,6 @@ export class Game extends Phaser.Scene {
     // SFX
     const SFX_SPRITE_SHEET = 'sfx';
     this.load.audioSprite(SFX_SPRITE_SHEET, 'assets/sfx-sprites.json.text', [
-      'assets/sfx-sprites.ogg',
       'assets/sfx-sprites.mp3',
     ]);
 

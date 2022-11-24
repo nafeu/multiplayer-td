@@ -23,14 +23,11 @@ import {
   BOARD_WIDTH,
   ENEMY_IMG_NAME,
   ENEMY_PATH,
-  ENEMY_SPAWN_RATE_MS,
   ENEMY_SPEED,
   GLOBAL_KEYS__MENU_KEY,
   HOMEBASE_TEXTURE_NAME,
   INVALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
-  SELECTION_RECTANGLE_COLOR,
-  SELECTION_RECTANGLE_OPACITY,
   SFX_ENEMY_DEATH,
   SFX_SPRITE_SHEET,
   SPRITE_ATLAS_NAME,
@@ -45,6 +42,7 @@ import HomeBase from '../entities/HomeBase';
 import { sliceFromTexture } from '../texture-utils';
 import { TileProperties } from '../entities/Map';
 import { Button } from '../entities/Button';
+import { Config } from '../configLoader';
 
 class LevelConfig {
   tilemapKey: string;
@@ -479,7 +477,7 @@ export class Game extends Phaser.Scene {
           enemy.setVisible(true);
           enemy.startOnPath(this.enemyPath);
 
-          this.nextEnemy = time + ENEMY_SPAWN_RATE_MS;
+          this.nextEnemy = time + Config.ENEMY_SPAWN_RATE_MS;
           this.enemiesSpawned += 1;
           this.enemiesRemainingInWave -= 1;
         }
@@ -798,8 +796,8 @@ export class Game extends Phaser.Scene {
         0,
         0,
         0,
-        SELECTION_RECTANGLE_COLOR,
-        SELECTION_RECTANGLE_OPACITY
+        Config.SELECTION_RECTANGLE_COLOR,
+        Config.SELECTION_RECTANGLE_OPACITY
       )
       .setDepth(1);
   }

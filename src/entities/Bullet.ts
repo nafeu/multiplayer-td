@@ -1,5 +1,6 @@
 import Phaser, { Scene } from 'phaser';
 
+import { Config } from '../configLoader';
 import {
   SPRITE_ATLAS_NAME,
   BULLET_IMG_NAME,
@@ -20,7 +21,7 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     this.dx = 0;
     this.dy = 0;
     this.lifespan = 0;
-    this.speed = Phaser.Math.GetSpeed(300, 1);
+    this.speed = Config.BULLET_BASE_SPEED;
   }
 
   setCorrectBoundingBox() {

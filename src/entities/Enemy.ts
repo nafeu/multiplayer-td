@@ -5,7 +5,8 @@ import HealthBar from './HealthBar';
 
 import { generateId } from '../utils';
 
-import { ENEMY_HP, ENEMY_IMG_NAME, ENEMY_SPEED, TILE_SIZE } from '../constants';
+import { ENEMY_IMG_NAME, TILE_SIZE } from '../constants';
+import { Config } from '../configLoader';
 
 class Enemy extends Phaser.Physics.Arcade.Sprite {
   id: string;
@@ -23,9 +24,9 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.id = generateId('Enemy');
 
     this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
-    this.hp = ENEMY_HP;
+    this.hp = Config.ENEMY_HP;
 
-    this.healthBar = new HealthBar(scene, -100, -100, ENEMY_HP, ENEMY_HP);
+    this.healthBar = new HealthBar(scene, -100, -100, this.hp, this.hp);
     this.recycled = 0;
   }
 
@@ -34,7 +35,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   _resetValuesForRecycle() {
-    this.hp = ENEMY_HP;
+    this.hp = Config.ENEMY_HP;
     this.recycled += 1;
   }
 
@@ -69,7 +70,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   getPositionAfterDelta(delta: number) {
     return this.enemyPath.getPoint(
-      Math.min(this.follower.t + ENEMY_SPEED * delta, 1),
+      Math.min(this.follower.t + Config.ENEMY_SPEED * delta, 1),
       this.follower.vec
     );
   }
@@ -85,7 +86,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   update(time: number, delta: number) {
     // move the t point along the path, 0 is the start and 0 is the end
-    this.follower.t += ENEMY_SPEED * delta;
+    this.follower.t += Config.ENEMY_SPEED * delta;
 
     // get the new x and y coordinates in vec
     this.enemyPath.getPoint(this.follower.t, this.follower.vec);

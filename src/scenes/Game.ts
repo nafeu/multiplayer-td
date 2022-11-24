@@ -31,6 +31,8 @@ import {
   OCCUPIED_UNIT_POSITION,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
+  SFX_ENEMY_DEATH,
+  SFX_SPRITE_SHEET,
   SPRITE_ATLAS_NAME,
   TILE_SIZE,
   UNIT_CROSSING,
@@ -50,6 +52,8 @@ class LevelConfig {
   waves: Wave[];
   MAP_LAYER_KEY = 'Below Player';
   OBJECT_LAYER_KEY = 'Map Objects';
+  OBJECT_LAYER_NAME_HOMEBASE = 'homebase';
+  OBJECT_LAYER_NAME_UNIT_SPAWN = 'spawn';
 
   constructor(tilemapKey: string, waves: Wave[]) {
     this.tilemapKey = tilemapKey;
@@ -167,7 +171,6 @@ export class Game extends Phaser.Scene {
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // SFX
-    const SFX_SPRITE_SHEET = 'sfx';
     this.load.audioSprite(SFX_SPRITE_SHEET, 'assets/sfx-sprites.json.text', [
       'assets/sfx-sprites.mp3',
     ]);
@@ -572,8 +575,7 @@ export class Game extends Phaser.Scene {
       if (!enemy.active) {
         this.kills += 1;
 
-        const SFX_ENEMY_DEATH = 'boss hit';
-        this.sound.playAudioSprite('sfx', SFX_ENEMY_DEATH);
+        this.sound.playAudioSprite(SFX_SPRITE_SHEET, SFX_ENEMY_DEATH);
       }
     }
   }
@@ -747,8 +749,10 @@ export class Game extends Phaser.Scene {
   }
 
   configureHomeBase() {
+    const currentConfig = this.getCurrentLevelConfiguration();
+
     const config: Phaser.Types.Tilemaps.CreateFromObjectLayerConfig = {
-      name: 'homebase',
+      name: currentConfig.OBJECT_LAYER_NAME_HOMEBASE,
       classType: HomeBase,
       scene: this,
       key: HOMEBASE_TEXTURE_NAME,
@@ -766,7 +770,7 @@ export class Game extends Phaser.Scene {
     from: https://newdocs.phaser.io/docs/3.54.0/focus/Phaser.Tilemaps.Tilemap-createFromObjects
     */
     const [homebase] = this.tilemap.createFromObjects(
-      this.getCurrentLevelConfiguration().OBJECT_LAYER_KEY,
+      currentConfig.OBJECT_LAYER_KEY,
       config
     ) as HomeBase[];
 
@@ -775,12 +779,13 @@ export class Game extends Phaser.Scene {
   }
 
   configureSpawnPoints() {
+    const currentConfig = this.getCurrentLevelConfiguration();
     const config: Phaser.Types.Tilemaps.CreateFromObjectLayerConfig = {
-      name: 'spawn',
+      name: currentConfig.OBJECT_LAYER_NAME_UNIT_SPAWN,
       scene: this,
     };
     const spawnPoints = this.tilemap.createFromObjects(
-      this.getCurrentLevelConfiguration().OBJECT_LAYER_KEY,
+      currentConfig.OBJECT_LAYER_KEY,
       config
     ) as Phaser.GameObjects.Sprite[];
     this.mapUnitSpawns = spawnPoints.map((s) => s.setAlpha(0));

@@ -74,7 +74,7 @@ export const entityManagerFactory = (scene: Game) => {
     } as Phaser.Types.GameObjects.Group.GroupCreateConfig),
     unitGroup: scene.add.group({
       classType: Unit,
-      runChildUpdate: true
+      runChildUpdate: true,
       // use createCallback to pass the scene for post initialization stuff
       // createCallback: function (unit: Unit) {
       //   console.log('### Unit Created', unit.id, unit);

@@ -15,6 +15,10 @@ export const BULLET_IMG_NAME = '17.png';
 export const ENEMY_IMG_NAME = 'drone1';
 export const HOMEBASE_TEXTURE_NAME = 'homebase';
 
+export const SFX_SPRITE_SHEET = 'sfx';
+export const SFX_ENEMY_DEATH = 'boss hit';
+export const SFX_BULLET_NORMAL = 'shot';
+
 export const WAVE_STATES = {
   SPAWNING: 'SPAWNING',
   WAITING: 'WAITING',

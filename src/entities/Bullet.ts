@@ -1,6 +1,11 @@
 import Phaser, { Scene } from 'phaser';
 
-import { SPRITE_ATLAS_NAME, BULLET_IMG_NAME } from '../constants';
+import {
+  SPRITE_ATLAS_NAME,
+  BULLET_IMG_NAME,
+  SFX_SPRITE_SHEET,
+  SFX_BULLET_NORMAL,
+} from '../constants';
 
 class Bullet extends Phaser.Physics.Arcade.Image {
   dx: number;
@@ -38,8 +43,8 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     this.dy = Math.sin(angle);
     this.lifespan = 1000;
     // TODO: lifespan should match range...for now just overshoot
-    const SFX_BULLET_NORMAL = 'shot';
-    this.scene.sound.playAudioSprite('sfx', SFX_BULLET_NORMAL);
+
+    this.scene.sound.playAudioSprite(SFX_SPRITE_SHEET, SFX_BULLET_NORMAL);
   }
 
   update(time: number, delta: number) {

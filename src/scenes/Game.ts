@@ -16,7 +16,6 @@ import {
   getValidUnitFormation,
   rotateFormationShape,
   isTileFreeAtPosition,
-  getPositionForTileCoordinates,
 } from '../utils';
 
 import {
@@ -32,6 +31,8 @@ import {
   OCCUPIED_UNIT_POSITION,
   SELECTION_RECTANGLE_COLOR,
   SELECTION_RECTANGLE_OPACITY,
+  SFX_ENEMY_DEATH,
+  SFX_SPRITE_SHEET,
   SPRITE_ATLAS_NAME,
   TILE_SIZE,
   UNIT_CROSSING,
@@ -50,6 +51,9 @@ class LevelConfig {
   totalEnemies: number;
   waves: Wave[];
   MAP_LAYER_KEY = 'Below Player';
+  OBJECT_LAYER_KEY = 'Map Objects';
+  OBJECT_LAYER_NAME_HOMEBASE = 'homebase';
+  OBJECT_LAYER_NAME_UNIT_SPAWN = 'spawn';
 
   constructor(tilemapKey: string, waves: Wave[]) {
     this.tilemapKey = tilemapKey;
@@ -74,6 +78,7 @@ export class Game extends Phaser.Scene {
   finder!: EasyStar.js;
   kills = 0;
   map!: number[][];
+  mapUnitSpawns = [] as Phaser.GameObjects.Sprite[];
   moveMode = false;
   nextEnemy!: number;
   playerHUD!: Phaser.GameObjects.Text;
@@ -166,7 +171,6 @@ export class Game extends Phaser.Scene {
     this.load.image('grass-biome', 'assets/grass-biome.png');
 
     // SFX
-    const SFX_SPRITE_SHEET = 'sfx';
     this.load.audioSprite(SFX_SPRITE_SHEET, 'assets/sfx-sprites.json.text', [
       'assets/sfx-sprites.mp3',
     ]);
@@ -207,7 +211,6 @@ export class Game extends Phaser.Scene {
 
   loadCurrentLevel() {
     const currentLevelConfig = this.getCurrentLevelConfiguration();
-
     this.tilemap = this.make.tilemap({ key: currentLevelConfig.tilemapKey });
     this.tileset = this.tilemap.addTilesetImage('grass-biome');
     this.tilemap.createLayer(currentLevelConfig.MAP_LAYER_KEY, this.tileset);
@@ -243,6 +246,7 @@ export class Game extends Phaser.Scene {
     this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
     this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
     this.configureHomeBase();
+    this.configureSpawnPoints();
 
     // Level Change Notification
     const verticalPosition = (BOARD_HEIGHT * 2) / 5;
@@ -323,9 +327,6 @@ export class Game extends Phaser.Scene {
 
     this.entities.pointer = new Pointer(this);
 
-    this.add.existing(this.entities.homeBase);
-    this.physics.add.existing(this.entities.homeBase);
-
     // COLLISION PHYSICS
     this.physics.add.overlap(
       this.entities.enemyGroup,
@@ -338,6 +339,11 @@ export class Game extends Phaser.Scene {
         return this.damageEnemy(enemy as Enemy, bullet as Bullet);
       }
     );
+
+    this.loadCurrentLevel();
+
+    this.add.existing(this.entities.homeBase);
+    this.physics.add.existing(this.entities.homeBase);
 
     this.physics.add.overlap(
       this.entities.enemyGroup,
@@ -361,13 +367,16 @@ export class Game extends Phaser.Scene {
       .setDepth(1)
       .setOrigin(1, 0);
 
-    this.loadCurrentLevel();
-
     // for the mobile demos
     if (this.sys.game.device.input.touch) this._loadTouchAssistBtn();
 
-    // TODO: Add & use 'unitStart' property via tilemap
-    this.placeUnit(70, 250, 'NORMAL' as UnitTypeOption);
+    this.mapUnitSpawns.slice(0, 1).forEach((spawnLocation) => {
+      this.placeUnit(
+        spawnLocation.x,
+        spawnLocation.y,
+        'NORMAL' as UnitTypeOption
+      );
+    });
   }
 
   KEYS = {
@@ -424,6 +433,7 @@ export class Game extends Phaser.Scene {
   }
 
   _loadTouchAssistBtn() {
+    this.moveMode = true;
     this.touchAssistBtn = new Button(
       this,
       BOARD_WIDTH - 5,
@@ -565,8 +575,7 @@ export class Game extends Phaser.Scene {
       if (!enemy.active) {
         this.kills += 1;
 
-        const SFX_ENEMY_DEATH = 'boss hit';
-        this.sound.playAudioSprite('sfx', SFX_ENEMY_DEATH);
+        this.sound.playAudioSprite(SFX_SPRITE_SHEET, SFX_ENEMY_DEATH);
       }
     }
   }
@@ -740,14 +749,46 @@ export class Game extends Phaser.Scene {
   }
 
   configureHomeBase() {
-    const { enemyEndCoordinates } = getEnemyStartEndCoordinates(this.map);
+    const currentConfig = this.getCurrentLevelConfiguration();
 
-    const { x, y } = getPositionForTileCoordinates({
-      row: enemyEndCoordinates.row,
-      col: enemyEndCoordinates.col,
-    });
+    const config: Phaser.Types.Tilemaps.CreateFromObjectLayerConfig = {
+      name: currentConfig.OBJECT_LAYER_NAME_HOMEBASE,
+      classType: HomeBase,
+      scene: this,
+      key: HOMEBASE_TEXTURE_NAME,
+    };
+    /*
+    All properties from object are copied into the Game Object,
+    so you can use this as an easy way to configure properties
+    from within the map editor. For example giving an object
+    a property of alpha: 0.5 in Tiled will be reflected in the
+    Game Object that is created.
 
-    this.entities.homeBase.setNewPosition(x, y).setDepth(1);
+    Custom object properties that do not exist as a Game Object property
+    are set in the Game Objects data.
+
+    from: https://newdocs.phaser.io/docs/3.54.0/focus/Phaser.Tilemaps.Tilemap-createFromObjects
+    */
+    const [homebase] = this.tilemap.createFromObjects(
+      currentConfig.OBJECT_LAYER_KEY,
+      config
+    ) as HomeBase[];
+
+    homebase.syncHealthBarPosition();
+    this.entities.homeBase = homebase;
+  }
+
+  configureSpawnPoints() {
+    const currentConfig = this.getCurrentLevelConfiguration();
+    const config: Phaser.Types.Tilemaps.CreateFromObjectLayerConfig = {
+      name: currentConfig.OBJECT_LAYER_NAME_UNIT_SPAWN,
+      scene: this,
+    };
+    const spawnPoints = this.tilemap.createFromObjects(
+      currentConfig.OBJECT_LAYER_KEY,
+      config
+    ) as Phaser.GameObjects.Sprite[];
+    this.mapUnitSpawns = spawnPoints.map((s) => s.setAlpha(0));
   }
 
   addSelectionRectangle() {

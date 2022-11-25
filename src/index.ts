@@ -34,7 +34,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 new Phaser.Game(config);
 
-(function loadDebugLoggerConfigurations() {
+function loadDebugLoggerConfigurations() {
   const LOG_CONFIG_KEY = '__log_config';
   const LOGGING_CONFIG: Record<string, boolean> = {};
   let loggingConfigOverrides: Record<string, boolean> = {};
@@ -64,6 +64,8 @@ new Phaser.Game(config);
     (key) => (isAllEnabled = isAllEnabled && LOGGING_CONFIG[key])
   );
 
+  synchronizeConfigs();
+
   document.querySelector(
     '#logging-controls'
   )!.innerHTML = `<table style="margin: auto">
@@ -89,6 +91,12 @@ new Phaser.Game(config);
           })
           .join('')}</table>`;
 
+  function synchronizeConfigs() {
+    LOGGING_KEYS_ALL.forEach((currKey) => {
+      setLoggingConfig(currKey, LOGGING_CONFIG[currKey]);
+    });
+  }
+
   document
     .querySelector('#logging-controls')!
     .addEventListener('click', (event) => {
@@ -105,9 +113,9 @@ new Phaser.Game(config);
 
         LOGGING_KEYS_ALL.forEach((key) => {
           LOGGING_CONFIG[key] = target.checked;
-          setLoggingConfig(key as LOGGING_KEYS, target.checked);
         });
 
+        synchronizeConfigs();
         updateSearchParamKey(LOG_CONFIG_KEY, JSON.stringify(LOGGING_CONFIG));
       }
 
@@ -116,4 +124,6 @@ new Phaser.Game(config);
 
       updateSearchParamKey(LOG_CONFIG_KEY, JSON.stringify(LOGGING_CONFIG));
     });
-})();
+}
+
+loadDebugLoggerConfigurations();

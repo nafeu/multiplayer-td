@@ -1,7 +1,7 @@
 import * as constants from './constants';
 
 type ValidConfigs = typeof constants;
-type ValidConfigKeys = keyof ValidConfigs;
+export type ValidConfigKeys = keyof ValidConfigs;
 
 const overrides: Partial<ValidConfigs> = {};
 
@@ -16,6 +16,10 @@ const ConfigProxy = new Proxy(constants, {
     return Object.hasOwn(overrides, handler as ValidConfigKeys)
       ? overrides[handler as ValidConfigKeys]
       : constants[handler as ValidConfigKeys];
+  },
+  set(target, handler, newValue) {
+    overrides[handler as ValidConfigKeys] = newValue;
+    return true;
   },
 });
 

@@ -13,9 +13,11 @@ import { Game } from './scenes/Game';
 import { MainMenu } from './scenes/MainMenu';
 import { PauseMenu } from './scenes/PauseMenu';
 import { GameOver } from './scenes/GameOver';
+import { ConfigDebugMenu } from './scenes/ConfigDebugMenu';
 
 const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: BOARD_BACKGROUND_COLOR,
+  dom: { createContainer: true, pointerEvents: '' },
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'content',
@@ -29,7 +31,7 @@ const config: Phaser.Types.Core.GameConfig = {
     },
     default: 'arcade',
   },
-  scene: [MainMenu, Game, PauseMenu, GameOver],
+  scene: [MainMenu, Game, ConfigDebugMenu, PauseMenu, GameOver],
 };
 
 new Phaser.Game(config);

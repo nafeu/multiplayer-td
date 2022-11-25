@@ -175,7 +175,7 @@ export class Unit extends Phaser.GameObjects.Image {
       // Second: using distance and speed, make a prediction
       // of when the bullet will collide with the enemy
       const futurePosition = enemy.getPositionAfterDelta(
-        approximateDistance / bullet.speed
+        approximateDistance / bullet.speed()
       );
 
       const angle = Phaser.Math.Angle.Between(

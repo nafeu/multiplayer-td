@@ -1,15 +1,49 @@
-import { Config, ValidConfigKeys } from '../configLoader';
+import { Config, ValidConfigKeys, writeConfig } from '../configLoader';
+import { getLogger } from '../logger';
+import { hasDebugFlag } from '../utils';
+
+const logger = getLogger('CONFIG_DEBUG');
 
 export const title = 'config-debug-menu';
 
 export class ConfigDebugMenu extends Phaser.Scene {
   CONFIG_CONTAINER = '#config-debug';
+  CONFIG_BACKUP_LOCAL_STORAGE = '__configOverrides';
+
+  persistConfigChanges: boolean;
 
   constructor() {
     super(title);
+    this.persistConfigChanges = hasDebugFlag('persist-config-debug');
+
+    if (this.persistConfigChanges) {
+      const persistedConfigs = this.loadFromLocalStorage();
+
+      const configKeys = Object.keys(persistedConfigs) as ValidConfigKeys[];
+      configKeys.forEach((key) => {
+        writeConfig(key, persistedConfigs[key]);
+      });
+    }
+  }
+
+  loadFromLocalStorage() {
+    const dump =
+      window.localStorage.getItem(this.CONFIG_BACKUP_LOCAL_STORAGE) ?? '{}';
+
+    return JSON.parse(dump) as typeof Config;
+  }
+
+  writeToLocalStorage() {
+    window.localStorage.setItem(
+      this.CONFIG_BACKUP_LOCAL_STORAGE,
+      JSON.stringify(Config)
+    );
   }
 
   create() {
+    const persistConfigChangesRef = this.persistConfigChanges;
+    const writeToLocalStorageRef = this.writeToLocalStorage.bind(this);
+
     function handleConfigChange(event: Event) {
       const target = event.target as HTMLInputElement;
 
@@ -19,10 +53,16 @@ export class ConfigDebugMenu extends Phaser.Scene {
         : target.value;
 
       const oldValue = Config[key];
-      Config[key] = value;
+      writeConfig(key, value);
       console.log(
         `updated ${key} to be ${value}, old value was: ${oldValue as string}`
       );
+      if (persistConfigChangesRef) {
+        logger.log(
+          'Dumping latest Configs to localStorage (this overwrites older copies)'
+        );
+        writeToLocalStorageRef();
+      }
     }
 
     function renderConfig(configKey: ValidConfigKeys, configValue: any) {

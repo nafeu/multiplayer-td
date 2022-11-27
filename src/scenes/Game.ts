@@ -8,6 +8,7 @@ import Pointer from '../entities/Pointer';
 
 import { EntityManager, entityManagerFactory } from '../entities';
 
+import { title as ConfigDebugMenuScene } from './ConfigDebugMenu';
 import { title as PauseMenuScene } from './PauseMenu';
 import { title as GameOverScene } from './GameOver';
 
@@ -24,6 +25,7 @@ import {
   ENEMY_IMG_NAME,
   ENEMY_PATH,
   ENEMY_SPEED,
+  GLOBAL_KEYS__CONFIG_DEBUG,
   GLOBAL_KEYS__MENU_KEY,
   HOMEBASE_TEXTURE_NAME,
   INVALID_UNIT_POSITION,
@@ -296,6 +298,14 @@ export class Game extends Phaser.Scene {
     this.input.keyboard.on(`keydown-${GLOBAL_KEYS__MENU_KEY}`, () => {
       this.scene.pause();
       this.scene.launch(PauseMenuScene);
+    });
+
+    this.input.keyboard.on(`keydown-${GLOBAL_KEYS__CONFIG_DEBUG}`, () => {
+      if (this.scene.isActive(ConfigDebugMenuScene)) {
+        this.scene.stop(ConfigDebugMenuScene);
+      } else {
+        this.scene.launch(ConfigDebugMenuScene);
+      }
     });
 
     this.input.on(

@@ -102,3 +102,5 @@ export const AVAILABLE_FORMATIONS: {
 export const DEFAULT_FORMATION_SHAPE = 'auto';
 
 export const GLOBAL_KEYS__MENU_KEY = 'ESC';
+
+export const GLOBAL_KEYS__CONFIG_DEBUG = `BACKTICK`;

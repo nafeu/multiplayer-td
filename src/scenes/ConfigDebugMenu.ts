@@ -3,19 +3,13 @@ import { Config, ValidConfigKeys } from '../configLoader';
 export const title = 'config-debug-menu';
 
 export class ConfigDebugMenu extends Phaser.Scene {
+  CONFIG_CONTAINER = '#config-debug';
+
   constructor() {
     super(title);
   }
 
   create() {
-    // this.input.on(
-    //   Phaser.Input.Events.POINTER_DOWN as string,
-    //   this.handleToggleMenu,
-    //   this
-    // );
-
-    // this.input.keyboard.on(`keydown-BACKTICK`, this.handleToggleMenu, this);
-
     function handleConfigChange(event: Event) {
       const target = event.target as HTMLInputElement;
 
@@ -43,7 +37,7 @@ export class ConfigDebugMenu extends Phaser.Scene {
       `;
     }
 
-    const configDump = document.querySelector('#config-debug')!;
+    const configDump = document.querySelector(this.CONFIG_CONTAINER)!;
     configDump.innerHTML = `
       <h3 style="margin-bottom: 0; ">Debug Config Values</h3>
       <div class="value-container" style="width: 100%; white-space: pre-line;">
@@ -57,9 +51,12 @@ export class ConfigDebugMenu extends Phaser.Scene {
     document
       .querySelector('.value-container')!
       .addEventListener('change', handleConfigChange);
+
+    // called when the scene is `stopped`
+    this.events.on('shutdown', this.hideConfigs, this);
   }
 
-  // handleToggleMenu = () => {
-  //   this.scene.stop();
-  // };
+  hideConfigs = () => {
+    document.querySelector(this.CONFIG_CONTAINER)!.innerHTML = '';
+  };
 }

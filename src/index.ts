@@ -17,7 +17,7 @@ import { ConfigDebugMenu } from './scenes/ConfigDebugMenu';
 
 const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: BOARD_BACKGROUND_COLOR,
-  dom: { createContainer: true, pointerEvents: '' },
+  dom: { createContainer: true },
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'content',

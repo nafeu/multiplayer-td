@@ -6,6 +6,40 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="TaNkYbOiZ" />
     <title>TaNkYbOiZ</title>
+    <script>
+      Reflect.defineProperty(Object.prototype, 'inspect', {
+        // get() {
+        //   const value = this.valueOf();
+        //   console.log(value);
+        //   return value;
+        // },
+        // set(value) {
+        //   Reflect.defineProperty(Object.prototype, 'inspect', {
+        //     value,
+        //     configurable: true,
+        //     writable: true,
+        //     enumerable: true,
+        //   });
+        // },
+        get() {
+          return (label, globalRef) => {
+            if (label) console.log(label, this);
+            else console.log(this);
+
+            if (globalRef) {
+              console.log(
+                `storing reference to: window.${globalRef}`,
+                (window[globalRef] = this)
+              );
+            }
+
+            return this;
+          };
+        },
+        configurable: true,
+        enumerable: false,
+      });
+    </script>
     <style type="text/css">
       /* Palette: https://flatuicolors.com/palette/defo */
 
@@ -28,7 +62,7 @@
         color: #ecf0f1;
       }
     </style>
-    <script async type="module" crossorigin src="./assets/index.00778774.js"></script>
+    <script async type="module" crossorigin src="./assets/index.4dfe303c.js"></script>
   </head>
   <body>
     <div id="content" style="height: 512px"></div>
@@ -57,6 +91,18 @@
       </table>
     </div>
     <div id="logging-controls" style="margin-top: 16px"></div>
+    <div
+      id="config-debug"
+      style="
+        position: fixed;
+        pointer-events: all;
+        top: 0;
+        right: 0;
+        width: 300px;
+        overflow: scroll;
+        height: 100%;
+      "
+    ></div>
     
   </body>
 </html>

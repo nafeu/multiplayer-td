@@ -6,13 +6,7 @@ import {
   VALID_UNIT_POSITION,
   OCCUPIED_UNIT_POSITION,
   TILE_SIZE,
-  UNIT_FIRE_RANGE,
-  UNIT_FIRE_RATE_MS,
   UNIT_SNAP_DISTANCE,
-  UNIT_MOVING_TINT,
-  UNIT_SELECTED_TILE_BORDER,
-  UNIT_PREPARING_TINT,
-  BULLET_DAMAGE,
   UNIT_IMG_NAME__NORMAL,
   UNIT_IMG_NAME__CHONKY,
   UNIT_IMG_NAME__SPEEDY,
@@ -28,6 +22,7 @@ import Bullet from './Bullet';
 import Enemy from './Enemy';
 import { TileHighlight } from './TileHighlight';
 import { ACTIONS, STATES, boundStateMachine } from './UnitStateMachine';
+import { Config } from '../configLoader';
 
 const logger = getLogger('UNIT_ENTITY');
 
@@ -65,7 +60,7 @@ export class Unit extends Phaser.GameObjects.Image {
     logger.log('### NEW TANKY', this);
 
     this.target = new Phaser.Math.Vector2();
-    this.speed = Phaser.Math.GetSpeed(100, 1);
+    this.speed = Config.UNIT_BASE_SPEED;
     this.nextTick = 0;
     this.isSelected = false;
     this._queuedPath = [];
@@ -74,7 +69,11 @@ export class Unit extends Phaser.GameObjects.Image {
     this._machine = boundStateMachine(this);
     this._machine.start();
 
-    this.highlight = new TileHighlight(scene, 2, UNIT_SELECTED_TILE_BORDER);
+    this.highlight = new TileHighlight(
+      scene,
+      2,
+      Config.UNIT_SELECTED_TILE_BORDER
+    );
 
     this.on(
       Phaser.Input.Events.POINTER_DOWN as string,
@@ -88,15 +87,15 @@ export class Unit extends Phaser.GameObjects.Image {
   }
 
   getDamage() {
-    return BULLET_DAMAGE;
+    return Config.BULLET_DAMAGE;
   }
 
   getFireRange() {
-    return UNIT_FIRE_RANGE;
+    return Config.UNIT_FIRE_RANGE;
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS;
+    return Config.UNIT_FIRE_RATE_MS;
   }
 
   getMovementSpeed() {
@@ -176,7 +175,7 @@ export class Unit extends Phaser.GameObjects.Image {
       // Second: using distance and speed, make a prediction
       // of when the bullet will collide with the enemy
       const futurePosition = enemy.getPositionAfterDelta(
-        approximateDistance / bullet.speed
+        approximateDistance / bullet.speed()
       );
 
       const angle = Phaser.Math.Angle.Between(
@@ -308,9 +307,9 @@ export class Unit extends Phaser.GameObjects.Image {
     const entities = this.gameScene().entities;
 
     if (this.isMoving()) {
-      this.setTint(UNIT_MOVING_TINT);
+      this.setTint(Config.UNIT_MOVING_TINT);
     } else if (this.isPreparing()) {
-      this.setTint(UNIT_PREPARING_TINT);
+      this.setTint(Config.UNIT_PREPARING_TINT);
     } else {
       this.clearTint();
     }
@@ -433,17 +432,17 @@ export class ChonkyUnit extends Unit {
   }
 
   getDamage() {
-    return BULLET_DAMAGE * 4;
+    return Config.BULLET_DAMAGE * 4;
   }
 
   getFireRange() {
-    return (UNIT_FIRE_RANGE * 2) / 3;
+    return (Config.UNIT_FIRE_RANGE * 2) / 3;
   }
 
   getFireRate() {
     // TODO: different burst options, current only double-tap
     this.__fireRateToggle = !this.__fireRateToggle;
-    return UNIT_FIRE_RATE_MS * (this.__fireRateToggle ? 1 : 2);
+    return Config.UNIT_FIRE_RATE_MS * (this.__fireRateToggle ? 1 : 2);
   }
 
   getMovementSpeed() {
@@ -457,15 +456,15 @@ export class SpeedyUnit extends Unit {
   }
 
   getDamage() {
-    return BULLET_DAMAGE / 4;
+    return Config.BULLET_DAMAGE / 4;
   }
 
   getFireRange() {
-    return UNIT_FIRE_RANGE;
+    return Config.UNIT_FIRE_RANGE;
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS / 2;
+    return Config.UNIT_FIRE_RATE_MS / 2;
   }
 
   getMovementSpeed() {
@@ -479,15 +478,15 @@ export class SnipeyUnit extends Unit {
   }
 
   getDamage() {
-    return BULLET_DAMAGE * 2;
+    return Config.BULLET_DAMAGE * 2;
   }
 
   getFireRange() {
-    return UNIT_FIRE_RANGE * 3;
+    return Config.UNIT_FIRE_RANGE * 3;
   }
 
   getFireRate() {
-    return UNIT_FIRE_RATE_MS * 6;
+    return Config.UNIT_FIRE_RATE_MS * 6;
   }
 
   getMovementSpeed() {
@@ -501,7 +500,7 @@ export const UnitType = {
   NORMAL: Unit,
   SPEEDY: SpeedyUnit,
   CHONKY: ChonkyUnit,
-  SNIPEY: SnipeyUnit
+  SNIPEY: SnipeyUnit,
 };
 
 export type UnitTypeOption = keyof typeof UnitType;

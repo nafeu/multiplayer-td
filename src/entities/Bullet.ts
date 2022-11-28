@@ -1,5 +1,6 @@
 import Phaser, { Scene } from 'phaser';
 
+import { Config } from '../configLoader';
 import {
   SPRITE_ATLAS_NAME,
   BULLET_IMG_NAME,
@@ -11,7 +12,6 @@ class Bullet extends Phaser.Physics.Arcade.Image {
   dx: number;
   dy: number;
   lifespan: number;
-  speed: number;
 
   _damage = 0;
 
@@ -20,7 +20,10 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     this.dx = 0;
     this.dy = 0;
     this.lifespan = 0;
-    this.speed = Phaser.Math.GetSpeed(300, 1);
+  }
+
+  speed() {
+    return Config.BULLET_BASE_SPEED;
   }
 
   setCorrectBoundingBox() {
@@ -49,8 +52,8 @@ class Bullet extends Phaser.Physics.Arcade.Image {
 
   update(time: number, delta: number) {
     this.lifespan -= delta;
-    this.x += this.dx * (this.speed * delta);
-    this.y += this.dy * (this.speed * delta);
+    this.x += this.dx * (this.speed() * delta);
+    this.y += this.dy * (this.speed() * delta);
 
     const shouldDeactivate = this.lifespan <= 0;
 

@@ -1,20 +1,14 @@
 import Phaser from 'phaser';
 import { Game } from '../scenes/Game';
 
-import {
-  TILE_SIZE,
-  INDICATOR_VALID_SELECTION_COLOR,
-  INDICATOR_INVALID_SELECTION_COLOR,
-  INDICATOR_OPACITY,
-  BOARD_HEIGHT,
-  BOARD_WIDTH,
-} from '../constants';
+import { TILE_SIZE, BOARD_HEIGHT, BOARD_WIDTH } from '../constants';
 
 import {
   getTileRowColBySceneXY,
   getValidUnitFormation,
   isTileFreeAtPosition,
 } from '../utils';
+import { Config } from '../configLoader';
 
 class Pointer extends Phaser.GameObjects.GameObject {
   indicator: Phaser.GameObjects.Graphics;
@@ -84,8 +78,8 @@ class Pointer extends Phaser.GameObjects.GameObject {
         isTileFreeAtPosition(this.x, this.y, this.gameScene().map)
       ) {
         this.indicator.fillStyle(
-          INDICATOR_VALID_SELECTION_COLOR,
-          INDICATOR_OPACITY
+          Config.INDICATOR_VALID_SELECTION_COLOR,
+          Config.INDICATOR_OPACITY
         );
 
         entities.selectedUnitGroup.getUnits().forEach((_, index) => {
@@ -98,15 +92,15 @@ class Pointer extends Phaser.GameObjects.GameObject {
         });
       } else {
         this.indicator.fillStyle(
-          INDICATOR_INVALID_SELECTION_COLOR,
-          INDICATOR_OPACITY
+          Config.INDICATOR_INVALID_SELECTION_COLOR,
+          Config.INDICATOR_OPACITY
         );
         this.indicator.fillRect(this.x, this.y, TILE_SIZE, TILE_SIZE);
       }
     } else {
       if (this.isDebugKeyDown()) {
         this.indicator
-          .fillStyle(0xffff00, INDICATOR_OPACITY)
+          .fillStyle(0xffff00, Config.INDICATOR_OPACITY)
           .fillRect(this.x, this.y, TILE_SIZE, TILE_SIZE);
 
         const col = this.x / TILE_SIZE;

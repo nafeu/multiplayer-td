@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 export const BOARD_BACKGROUND_COLOR = '#16a085';
 export const BOARD_WIDTH = 640;
 export const BOARD_HEIGHT = 512;
@@ -26,6 +28,7 @@ export const WAVE_STATES = {
 
 export const TILE_SIZE = SPRITE_SIZE;
 
+export const BULLET_BASE_SPEED = Phaser.Math.GetSpeed(300, 1);
 export const BULLET_DAMAGE = 50;
 export const ENEMY_HP = 500;
 export const ENEMY_SPAWN_RATE_MS = 300;
@@ -37,6 +40,7 @@ export const HOMEBASE__SHAKE_INTENSITY = 0.0125 / 2;
 export const HOMEBASE_DAMAGED_TINT = 0xff0000;
 export const HOMEBASE_DEAD_TINT = 0x0f0f0f;
 
+export const UNIT_BASE_SPEED = Phaser.Math.GetSpeed(100, 1);
 export const UNIT_FIRE_RANGE = 100;
 export const UNIT_FIRE_RATE_MS = 100;
 export const UNIT_SNAP_DISTANCE = 2;
@@ -98,3 +102,5 @@ export const AVAILABLE_FORMATIONS: {
 export const DEFAULT_FORMATION_SHAPE = 'auto';
 
 export const GLOBAL_KEYS__MENU_KEY = 'ESC';
+
+export const GLOBAL_KEYS__CONFIG_DEBUG = `BACKTICK`;

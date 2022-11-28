@@ -1,13 +1,7 @@
 import { Scene } from 'phaser';
-import {
-  HOMEBASE_DAMAGED_TINT,
-  HOMEBASE_DEAD_TINT,
-  HOMEBASE_HP,
-  HOMEBASE_TEXTURE_NAME,
-  HOMEBASE__SHAKE_DURATION,
-  HOMEBASE__SHAKE_INTENSITY,
-  TILE_SIZE,
-} from '../constants';
+
+import { Config } from '../configLoader';
+import { HOMEBASE_TEXTURE_NAME, TILE_SIZE } from '../constants';
 import HealthBar from './HealthBar';
 
 class HomeBase extends Phaser.GameObjects.Image {
@@ -19,7 +13,7 @@ class HomeBase extends Phaser.GameObjects.Image {
   constructor(scene: Scene) {
     super(scene, 0, 0, HOMEBASE_TEXTURE_NAME);
 
-    this.hp = HOMEBASE_HP;
+    this.hp = Config.HOMEBASE_HP;
     this.healthBar = new HealthBar(
       scene,
       this.x - TILE_SIZE / 2,
@@ -57,16 +51,16 @@ class HomeBase extends Phaser.GameObjects.Image {
     this.hp -= damage;
 
     this.scene.cameras.main.shake(
-      HOMEBASE__SHAKE_DURATION,
-      HOMEBASE__SHAKE_INTENSITY
+      Config.HOMEBASE__SHAKE_DURATION,
+      Config.HOMEBASE__SHAKE_INTENSITY
     );
 
-    this.setTint(HOMEBASE_DAMAGED_TINT);
+    this.setTint(Config.HOMEBASE_DAMAGED_TINT);
 
     // don't clober the new tint with a stale reset
     this._previousDamageTintReset?.remove();
     this._previousDamageTintReset = this.scene.time.delayedCall(
-      HOMEBASE__SHAKE_DURATION,
+      Config.HOMEBASE__SHAKE_DURATION,
       () => {
         this.clearTint();
         this._previousDamageTintReset = null;
@@ -79,7 +73,7 @@ class HomeBase extends Phaser.GameObjects.Image {
       this.hp = 0;
 
       this._previousDamageTintReset?.remove();
-      this.setTint(HOMEBASE_DEAD_TINT);
+      this.setTint(Config.HOMEBASE_DEAD_TINT);
     }
   }
 

@@ -1,5 +1,6 @@
 const LOGGING_CONFIG = {
   _ENABLE_ALL: false,
+  CONFIG_DEBUG: true,
   DEBUG_HUD__KEYBOARD_STATUS: false,
   DEBUG_HUD__UNIT_STATUS: false,
   DEBUG_HUD__HOME_BASE_HP: false,
@@ -11,9 +12,9 @@ const LOGGING_CONFIG = {
   POINTER_UI_DEBUG: false,
 };
 
-export const LOGGING_KEYS_ALL = Object.keys(LOGGING_CONFIG);
-
 export type LOGGING_KEYS = keyof Omit<typeof LOGGING_CONFIG, '_ENABLE_ALL'>;
+
+export const LOGGING_KEYS_ALL = Object.keys(LOGGING_CONFIG) as LOGGING_KEYS[];
 
 export function getLoggingConfig(key: LOGGING_KEYS) {
   return LOGGING_CONFIG[key];

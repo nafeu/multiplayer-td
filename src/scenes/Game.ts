@@ -470,6 +470,7 @@ export class Game extends Phaser.Scene {
         if (enemy) {
           enemy.setActive(true);
           enemy.setVisible(true);
+          enemy.clearTint();
           enemy.startOnPath(this.enemyPath);
 
           this.nextEnemy = time + Config.ENEMY_SPAWN_RATE_MS;

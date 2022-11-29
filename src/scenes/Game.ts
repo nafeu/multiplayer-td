@@ -110,7 +110,7 @@ export class Game extends Phaser.Scene {
     this.enemiesSpawned = 0;
     this.enemiesRemainingInWave = 0;
 
-    this.waveState = WAVE_STATES.SPAWNING;
+    this.waveState = WAVE_STATES.WAITING;
 
     /*
       TODO: Store level wave configurations in either
@@ -248,33 +248,7 @@ export class Game extends Phaser.Scene {
     this.configureHomeBase();
     this.configureSpawnPoints();
 
-    // Level Change Notification
-    const verticalPosition = (BOARD_HEIGHT * 2) / 5;
-    const initialY = BOARD_HEIGHT / 2;
-
-    const text = this.add
-      .text(
-        BOARD_WIDTH / 2,
-        initialY,
-        `Level ${this.currentLevelIndex + 1}: Wave 1`,
-        {
-          align: 'center',
-          fontSize: '32px',
-        }
-      )
-      .setAlpha(0)
-      .setOrigin(0.5, 0.5);
-
-    this.tweens.add({
-      targets: text,
-      alpha: { value: 1, duration: 2000, ease: 'Power1' },
-      y: { value: verticalPosition, duration: 3000, ease: 'Power1' },
-    });
-
-    this.tweens.add({
-      targets: text,
-      alpha: { value: 0, delay: 2000, duration: 1000, ease: 'Power1' },
-    });
+    this.triggerUIMessage(`Level ${this.currentLevelIndex + 1}`, 42);
   }
 
   create() {
@@ -849,9 +823,9 @@ export class Game extends Phaser.Scene {
     }
   }
 
-  triggerUIMessage(message: string) {
-    const verticalPosition = (BOARD_HEIGHT * 2) / 5;
-    const initialY = BOARD_HEIGHT / 2;
+  triggerUIMessage(message: string, verticalOffset = 0) {
+    const verticalPosition = (BOARD_HEIGHT * 2) / 5 - verticalOffset;
+    const initialY = BOARD_HEIGHT / 2 - verticalOffset;
 
     const text = this.add
       .text(BOARD_WIDTH / 2, initialY, message, {

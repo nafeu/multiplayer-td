@@ -14,7 +14,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
   hp: number;
   healthBar: HealthBar;
   recycled: number;
-  enemyPath!: Phaser.Curves.Path;
+  enemyPath!: Phaser.Curves.Path | Phaser.Curves.Spline;
 
   constructor(scene: Game) {
     super(scene, 0, 0, ENEMY_IMG_NAME);
@@ -56,7 +56,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  startOnPath(path: Phaser.Curves.Path) {
+  startOnPath(path: Phaser.Curves.Path | Phaser.Curves.Spline) {
     this.enemyPath = path;
 
     this.follower.t = 0;
@@ -108,5 +108,7 @@ class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 }
+
+export class FlyingEnemy extends Enemy {}
 
 export default Enemy;

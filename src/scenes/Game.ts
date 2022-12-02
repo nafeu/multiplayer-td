@@ -17,6 +17,8 @@ import {
   getValidUnitFormation,
   rotateFormationShape,
   isTileFreeAtPosition,
+  hasDebugFlag,
+  getTileRowColBySceneXY,
 } from '../utils';
 
 import {
@@ -73,6 +75,7 @@ export class Game extends Phaser.Scene {
    * letting you do cool stuff. So this should be okay...
    * */
   enemyPath!: Phaser.Curves.Path;
+  enemyFlyingPath!: Phaser.Curves.Spline;
   enemyPathfinder!: EasyStar.js;
   entities!: EntityManager;
   finder!: EasyStar.js;
@@ -244,9 +247,10 @@ export class Game extends Phaser.Scene {
       this.time.now + currentLevelConfig.waves[this.currentWaveIndex].delay;
 
     this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
-    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
     this.configureHomeBase();
+    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
     this.configureSpawnPoints();
+    this.configureFlyingEnemyPathfinding();
 
     this.triggerUIMessage(`Level ${this.currentLevelIndex + 1}`, 42);
   }
@@ -455,10 +459,19 @@ export class Game extends Phaser.Scene {
 
       if (shouldSpawnEnemy) {
         const enemy = this.entities.enemyGroup.get() as Enemy | null;
+        const flyingEnemy = this.entities.enemyGroup.get() as Enemy | null;
+
+        if (flyingEnemy) {
+          flyingEnemy.setActive(true);
+          flyingEnemy.setVisible(true);
+          flyingEnemy.setTint(0xff00ff);
+          flyingEnemy.startOnPath(this.enemyFlyingPath);
+        }
 
         if (enemy) {
           enemy.setActive(true);
           enemy.setVisible(true);
+          enemy.clearTint();
           enemy.startOnPath(this.enemyPath);
 
           this.nextEnemy = time + Config.ENEMY_SPAWN_RATE_MS;
@@ -704,12 +717,92 @@ export class Game extends Phaser.Scene {
     ]);
   }
 
+  configureFlyingEnemyPathfinding() {
+    const { enemyStartCoordinates: enemySpawn } = getEnemyStartEndCoordinates(
+      this.map
+    );
+
+    const path = this.createSpiralPathBetweenTwoPoints(
+      this.entities.homeBase.x,
+      this.entities.homeBase.y,
+      enemySpawn.col,
+      enemySpawn.row
+    );
+
+    if (hasDebugFlag('visualize-path-finding')) {
+      const graphics = this.add
+        .graphics()
+        .lineStyle(3, 0xffffff, 1)
+        .setDepth(10000);
+      path.draw(graphics);
+    }
+
+    this.enemyFlyingPath = path;
+  }
+
+  createSpiralPathBetweenTwoPoints = (
+    // path: Phaser.Curves.Path,
+    centerX: number,
+    centerY: number,
+    targetX: number,
+    targetY: number,
+    rotations = 2
+  ) => {
+    const radiusMax = Phaser.Math.Distance.Between(
+      centerX,
+      centerY,
+      targetX,
+      targetY
+    );
+
+    const steps = rotations;
+    const turns = 50;
+    const radiusStep = radiusMax / (steps * turns);
+
+    // https://subscription.packtpub.com/book/web-development/9781849691369/1/ch01lvl1sec16/drawing-a-spiral
+    let radius = 0;
+    let angle = 0;
+
+    // path.moveTo(centerX, centerY);
+    const points = [];
+    points.push(new Phaser.Math.Vector2(centerX, centerY));
+
+    for (let n = 0; n < steps * turns; n++) {
+      radius += radiusStep;
+      // make a complete circle every 50 iterations
+      angle += (Math.PI * 2) / turns;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      // path.lineTo(x, y);
+      points.push(new Phaser.Math.Vector2(x, y));
+    }
+
+    const spiralRotation = Phaser.Math.Angle.Between(
+      centerX,
+      centerY,
+      targetX,
+      targetY
+    );
+
+    points.reverse();
+
+    const newPoints = points.map((point) =>
+      Phaser.Math.RotateAround(point, centerX, centerY, spiralRotation)
+    );
+
+    return new Phaser.Curves.Spline(newPoints);
+  };
+
   configureEnemyPathfinding(enemyPathfinder: EasyStar.js, map: number[][]) {
     enemyPathfinder.setGrid(map);
     enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
 
-    const { enemyStartCoordinates, enemyEndCoordinates } =
-      getEnemyStartEndCoordinates(map);
+    const { enemyStartCoordinates } = getEnemyStartEndCoordinates(map);
+
+    const enemyEndCoordinates = getTileRowColBySceneXY(
+      this.entities.homeBase.x,
+      this.entities.homeBase.y
+    );
 
     enemyPathfinder.enableSync();
     enemyPathfinder.findPath(

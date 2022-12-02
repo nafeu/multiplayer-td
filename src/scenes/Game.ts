@@ -18,6 +18,7 @@ import {
   rotateFormationShape,
   isTileFreeAtPosition,
   hasDebugFlag,
+  getTileRowColBySceneXY,
 } from '../utils';
 
 import {
@@ -246,8 +247,8 @@ export class Game extends Phaser.Scene {
       this.time.now + currentLevelConfig.waves[this.currentWaveIndex].delay;
 
     this.configureUnitPathfindingGrid(this.unitPathfinder, this.map);
-    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
     this.configureHomeBase();
+    this.configureEnemyPathfinding(this.enemyPathfinder, this.map);
     this.configureSpawnPoints();
     this.configureFlyingEnemyPathfinding();
 
@@ -717,7 +718,7 @@ export class Game extends Phaser.Scene {
   }
 
   configureFlyingEnemyPathfinding() {
-    const { enemyEndCoordinates: enemySpawn } = getEnemyStartEndCoordinates(
+    const { enemyStartCoordinates: enemySpawn } = getEnemyStartEndCoordinates(
       this.map
     );
 
@@ -796,8 +797,12 @@ export class Game extends Phaser.Scene {
     enemyPathfinder.setGrid(map);
     enemyPathfinder.setAcceptableTiles([ENEMY_PATH, UNIT_CROSSING]);
 
-    const { enemyStartCoordinates, enemyEndCoordinates } =
-      getEnemyStartEndCoordinates(map);
+    const { enemyStartCoordinates } = getEnemyStartEndCoordinates(map);
+
+    const enemyEndCoordinates = getTileRowColBySceneXY(
+      this.entities.homeBase.x,
+      this.entities.homeBase.y
+    );
 
     enemyPathfinder.enableSync();
     enemyPathfinder.findPath(

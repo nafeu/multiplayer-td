@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "public/assets/level-0.tmx",
+    "activeFile": "public/assets/level-1.tmj",
     "expandedProjectPaths": [
         "public",
         ".",
@@ -26,19 +26,20 @@
             "scale": 0.939609375,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 326.19938471771843,
+                "x": 326.7315207449904,
                 "y": 297.46403924503204
             }
         },
         "public/assets/level-0.tmj#grass-biome": {
-            "scaleInDock": 1
+            "scaleInDock": 1,
+            "scaleInEditor": 1
         },
         "public/assets/level-0.tmx": {
             "scale": 0.89359375,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 339.63979716733695,
-                "y": 311.66287812554646
+                "x": 331.24672145479985,
+                "y": 303.8293407938451
             }
         },
         "public/assets/level-0.tmx#grass-biome": {
@@ -48,12 +49,13 @@
             "scale": 0.939609375,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 320.87802444499874,
-                "y": 279.37141431778497
+                "x": 320.34588841772677,
+                "y": 279.371414317785
             }
         },
         "public/assets/level-1.tmj#grass-biome": {
-            "scaleInDock": 1
+            "scaleInDock": 1,
+            "scaleInEditor": 1
         }
     },
     "last.exportedFilePath": "/Users/nafeu/Development/github/multiplayer-td/public/assets",
@@ -63,14 +65,15 @@
     "map.lastUsedFormat": "tmx",
     "map.width": 20,
     "openFiles": [
-        "public/assets/level-0.tmx"
+        "public/assets/level-0.tmj",
+        "public/assets/level-1.tmj"
     ],
     "project": "tilemaps.tiled-project",
     "property.type": "bool",
     "recentFiles": [
-        "public/assets/level-0.tmx",
         "public/assets/level-0.tmj",
         "public/assets/level-1.tmj",
+        "public/assets/level-0.tmx",
         "public/assets/grass-biome.tsx"
     ],
     "tileset.embedInMap": true,

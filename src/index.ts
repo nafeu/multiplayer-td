@@ -12,6 +12,7 @@ import { getSearchParamKey, hasDebugFlag, updateSearchParamKey } from './utils';
 import { Game } from './scenes/Game';
 import { MainMenu } from './scenes/MainMenu';
 import { PauseMenu } from './scenes/PauseMenu';
+import { StoreMenu } from './scenes/StoreMenu';
 import { GameOver } from './scenes/GameOver';
 import { ConfigDebugMenu } from './scenes/ConfigDebugMenu';
 
@@ -31,7 +32,7 @@ const config: Phaser.Types.Core.GameConfig = {
     },
     default: 'arcade',
   },
-  scene: [MainMenu, Game, ConfigDebugMenu, PauseMenu, GameOver],
+  scene: [MainMenu, Game, ConfigDebugMenu, PauseMenu, StoreMenu, GameOver],
 };
 
 new Phaser.Game(config);

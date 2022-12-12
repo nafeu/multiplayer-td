@@ -11,6 +11,7 @@ import { EntityManager, entityManagerFactory } from '../entities';
 import { title as ConfigDebugMenuScene } from './ConfigDebugMenu';
 import { title as PauseMenuScene } from './PauseMenu';
 import { title as GameOverScene } from './GameOver';
+import { title as StoreMenuScene } from './StoreMenu';
 
 import {
   sendUiAlert,
@@ -119,8 +120,8 @@ export class Game extends Phaser.Scene {
     this.levelConfigurations = [
       new LevelConfig('level-0', [
         {
-          enemies: [3, 3, 3],
-          delay: 3000,
+          enemies: [1],
+          delay: 1000,
         },
         {
           enemies: [15],
@@ -518,8 +519,9 @@ export class Game extends Phaser.Scene {
             this.scene.restart();
           }
         } else {
+          this.openStoreMenu();
           this.waveState = WAVE_STATES.SPAWNING;
-          this.placeUnit(70, 250, 'NORMAL' as UnitTypeOption);
+          // this.placeUnit(70, 250, 'NORMAL' as UnitTypeOption);
           this.nextEnemy = time + currentWave.delay;
 
           this.triggerUIMessage(`Wave ${this.currentWaveIndex + 1}`);
@@ -845,6 +847,11 @@ export class Game extends Phaser.Scene {
       targets: text,
       alpha: { value: 0, delay: 1000, duration: 500, ease: 'Power1' },
     });
+  }
+
+  openStoreMenu() {
+    this.scene.pause();
+    this.scene.launch(StoreMenuScene);
   }
 }
 

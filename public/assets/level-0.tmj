@@ -4,9 +4,9 @@
  "layers":[
         {
          "data":[85, 74, 75, 1, 33, 1, 73, 74, 74, 75, 67, 139, 140, 80, 115, 141, 69, 73, 74, 86,
-            63, 1, 22, 11, 48, 1, 39, 102, 1, 1, 79, 80, 80, 115, 80, 140, 81, 1, 1, 61,
-            75, 1, 45, 1, 1, 1, 1, 102, 1, 1, 1, 5, 1, 1, 1, 1, 27, 49, 50, 98,
-            60, 1, 29, 1, 1, 1, 1, 102, 1, 1, 39, 1, 1, 1, 1, 1, 1, 73, 74, 86,
+            63, 1, 22, 11, 48, 1, 39, 1, 1, 1, 79, 80, 80, 115, 80, 140, 81, 1, 1, 61,
+            75, 1, 45, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 27, 49, 50, 98,
+            60, 1, 29, 1, 1, 1, 1, 1, 1, 1, 39, 1, 1, 1, 1, 1, 1, 73, 74, 86,
             72, 1, 21, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 61,
             72, 1, 46, 11, 11, 12, 7, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 24, 1, 73,
             84, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 45, 1, 1,
@@ -694,6 +694,150 @@
                 }, 
                 {
                  "id":140,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":144,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":145,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":146,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":147,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":156,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":157,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":158,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":159,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":168,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":169,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":170,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":171,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":180,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":181,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":182,
+                 "properties":[
+                        {
+                         "name":"collision",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":183,
                  "properties":[
                         {
                          "name":"collision",
